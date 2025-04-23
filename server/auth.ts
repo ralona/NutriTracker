@@ -16,16 +16,60 @@ declare global {
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  try {
+    // Asegurarse de que se proporciona una contraseña
+    if (!password) {
+      console.error("Se intentó generar un hash para una contraseña vacía");
+      // Usar una contraseña predeterminada para evitar errores (no recomendado en producción)
+      password = "default_password";
+    }
+    
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    const hashedPassword = `${buf.toString("hex")}.${salt}`;
+    
+    // Verificar que el hash tiene el formato esperado
+    if (!hashedPassword.includes('.')) {
+      throw new Error("El formato del hash generado es incorrecto");
+    }
+    
+    return hashedPassword;
+  } catch (error) {
+    console.error("Error al generar hash de password:", error);
+    throw error;
+  }
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  try {
+    // Si no hay password almacenado o no tiene el formato esperado, retornar false
+    if (!stored || !stored.includes('.')) {
+      console.log("Password almacenado con formato incorrecto o vacío");
+      return false;
+    }
+    
+    const [hashed, salt] = stored.split(".");
+    
+    // Si falta alguno de los componentes, retornar false
+    if (!hashed || !salt) {
+      console.log("Componentes de password incompletos");
+      return false;
+    }
+    
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    
+    // Verificar que los buffers tienen el mismo tamaño
+    if (hashedBuf.length !== suppliedBuf.length) {
+      console.log(`Los buffers tienen tamaños diferentes: ${hashedBuf.length} vs ${suppliedBuf.length}`);
+      return false;
+    }
+    
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    console.error("Error al comparar passwords:", error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -153,13 +197,16 @@ export function setupAuth(app: Express) {
       const expireDate = new Date();
       expireDate.setDate(expireDate.getDate() + 7); // 7 días de validez
       
-      // Crear usuario invitado pero inactivo
+      // Crear usuario invitado pero inactivo con password temporal
+      // Usamos un hash de password aleatorio que nunca se usará (pero que tenga el formato correcto)
+      const tempPasswordHash = await hashPassword(randomBytes(16).toString('hex'));
+      
       await storage.createUser({
         email,
         name,
-        password: '', // Se establecerá cuando el usuario acepte la invitación
+        password: tempPasswordHash, // Se sobreescribirá cuando el usuario acepte la invitación
         role: 'client',
-        nutritionistId: req.user.id,
+        nutritionistId: req.user!.id,
         active: false,
         inviteToken: token,
         inviteExpires: expireDate

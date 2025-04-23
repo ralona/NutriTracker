@@ -47,7 +47,7 @@ export default function AuthPage() {
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: ""
     }
   });
@@ -56,13 +56,13 @@ export default function AuthPage() {
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
       password: "",
       confirmPassword: "",
       name: "",
       email: "",
       role: "client",
       nutritionistId: 1, // Default to first nutritionist
+      active: true
     }
   });
 
@@ -107,12 +107,12 @@ export default function AuthPage() {
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                       <FormField
                         control={loginForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Usuario</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="Ingresa tu usuario" {...field} />
+                              <Input type="email" placeholder="ejemplo@correo.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -194,19 +194,7 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Usuario</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Elige un nombre de usuario" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+
                       <FormField
                         control={registerForm.control}
                         name="password"

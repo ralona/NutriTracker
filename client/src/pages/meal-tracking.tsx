@@ -39,7 +39,17 @@ export default function MealTracking() {
   const [isAddingMeal, setIsAddingMeal] = useState<boolean>(false);
   const [editingMeal, setEditingMeal] = useState<number | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<MealTypeValues | null>(null);
-  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
+  // Obtener el modo de vista inicial desde la URL
+  const getInitialViewMode = (): "daily" | "weekly" => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const viewParam = params.get('view');
+      return (viewParam === 'weekly') ? 'weekly' : 'daily';
+    }
+    return 'daily';
+  };
+
+  const [viewMode, setViewMode] = useState<"daily" | "weekly">(getInitialViewMode());
 
   // Para la vista semanal
   const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));

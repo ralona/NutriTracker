@@ -400,17 +400,17 @@ export default function WeeklyView() {
             <div className="bg-gray-100 rounded-full p-4 mb-4">
               <CalendarCheck className="h-10 w-10 text-primary" />
             </div>
-            <h3 className="text-lg font-medium mb-2">Registro de comidas</h3>
+            <h3 className="text-lg font-medium mb-2">Plan Nutricional</h3>
             <p className="text-gray-500 max-w-md mb-4">
-              Para registrar tus comidas y visualizarlas en formato semanal, ve a la sección "Comidas Diarias" 
-              y utiliza la vista semanal.
+              Esta sección muestra exclusivamente el plan nutricional preparado por tu nutricionista.
+              Para registrar o ver tus propias comidas, utiliza la sección "Comidas Diarias".
             </p>
             <Button 
-              onClick={() => window.location.href = '/'}
+              onClick={() => window.location.href = '/?view=daily'}
               className="inline-flex items-center px-4 py-2 font-medium"
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Ir a Comidas Diarias
+              <Calendar className="h-5 w-5 mr-2" />
+              Ver Mis Comidas
             </Button>
           </div>
         </CardContent>

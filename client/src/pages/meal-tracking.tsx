@@ -500,18 +500,10 @@ export default function MealTracking() {
                     onAddMeal={(day, mealType) => {
                       const date = new Date(day);
                       goToSelectedDayMeal(date);
-                      // Pequeña espera para asegurar que cambia de vista antes de abrir el modal
-                      setTimeout(() => {
-                        startAddMeal(mealType);
-                      }, 100);
                     }}
                     onEditMeal={(meal) => {
                       const date = new Date(meal.date);
                       goToSelectedDayMeal(date);
-                      // Pequeña espera para asegurar que cambia de vista antes de abrir el modal
-                      setTimeout(() => {
-                        startEditMeal(meal.id);
-                      }, 100);
                     }}
                   />
                 </CardContent>

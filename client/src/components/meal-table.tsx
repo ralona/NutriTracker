@@ -81,30 +81,26 @@ export default function MealTable({
                             )}
                           </div>
                         ))}
-                        {!isNutritionist && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                            onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
-                          >
-                            + Añadir otro
-                          </Button>
-                        )}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
+                        >
+                          Ver detalles
+                        </Button>
                       </div>
                     ) : (
                       <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
-                        {!isNutritionist && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                            onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
-                          >
-                            + Añadir
-                          </Button>
-                        )}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
+                        >
+                          Ver día
+                        </Button>
                       </div>
                     )}
                   </td>
@@ -142,30 +138,26 @@ export default function MealTable({
                             )}
                           </div>
                         ))}
-                        {!isNutritionist && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                            onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
-                          >
-                            + Añadir otro
-                          </Button>
-                        )}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
+                        >
+                          Ver detalles
+                        </Button>
                       </div>
                     ) : (
                       <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
-                        {!isNutritionist && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                            onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
-                          >
-                            + Añadir
-                          </Button>
-                        )}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
+                        >
+                          Ver día
+                        </Button>
                       </div>
                     )}
                   </td>

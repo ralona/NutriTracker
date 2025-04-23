@@ -42,8 +42,7 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
-    // Log para depuración
-    console.log("Comparando contraseñas");
+    console.log("Comparando contraseñas - Tipo almacenada:", typeof stored);
     
     // Si no hay password almacenado o suministrado, retornar false
     if (!stored || !supplied) {
@@ -52,32 +51,43 @@ async function comparePasswords(supplied: string, stored: string) {
     }
     
     // Caso especial: contraseña en texto plano (para usuarios migrando)
-    // Esto es temporal y solo para mantener compatibilidad con usuarios existentes
-    // Verificamos que no esté en formato hash.salt
     if (!stored.includes('.')) {
-      console.log("Password almacenado en texto plano, comparando directamente");
+      console.log("Password almacenado en texto plano:", stored);
+      console.log("Password suministrado:", supplied);
+      // Comparación directa para contraseñas en texto plano
+      const isEqual = stored === supplied;
+      console.log("Resultado de comparación directa:", isEqual ? "Éxito" : "Fallida");
+      return isEqual;
+    }
+    
+    console.log("Password hasheado, usando comparación segura");
+    
+    try {
+      // Para passwords hasheados con formato correcto (hash.salt)
+      const parts = stored.split(".");
+      if (parts.length !== 2) {
+        console.log("Formato de contraseña inválido");
+        return false;
+      }
+      
+      const [hashed, salt] = parts;
+      
+      // Generar hash del password suministrado con la misma sal
+      const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+      const hashedBuf = Buffer.from(hashed, "hex");
+      
+      // Usar timingSafeEqual para evitar ataques de temporización
+      const isEqual = timingSafeEqual(hashedBuf, suppliedBuf);
+      console.log("Resultado de comparación hash:", isEqual ? "Éxito" : "Fallida");
+      return isEqual;
+    } catch (hashError) {
+      console.error("Error específico en hash:", hashError);
+      // Si falla la comparación hash, probar como último recurso comparación directa
+      // Esto es para manejar casos extremos de migración
       return stored === supplied;
     }
-    
-    // Para passwords hasheados con formato correcto (hash.salt)
-    const parts = stored.split(".");
-    if (parts.length !== 2) {
-      console.log("Formato de contraseña inválido");
-      return false;
-    }
-    
-    const [hashed, salt] = parts;
-    
-    // Convertir el hash almacenado a buffer
-    const hashedBuf = Buffer.from(hashed, "hex");
-    
-    // Generar hash del password suministrado con la misma sal
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    
-    // Usar timingSafeEqual para evitar ataques de temporización
-    return timingSafeEqual(hashedBuf, suppliedBuf);
   } catch (error) {
-    console.error("Error al comparar passwords:", error);
+    console.error("Error general al comparar passwords:", error);
     return false;
   }
 }
@@ -106,11 +116,29 @@ export function setupAuth(app: Express) {
         passwordField: 'password'
       },
       async (email, password, done) => {
-        const user = await storage.getUserByEmail(email);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else {
-          return done(null, user);
+        console.log("Intento de login para:", email);
+        try {
+          // Intentando obtener el usuario con email
+          const user = await storage.getUserByEmail(email);
+          console.log("Usuario encontrado:", user ? `ID: ${user.id}, Activo: ${user.active}` : "No encontrado");
+          
+          if (!user) {
+            console.log("Usuario no encontrado en la base de datos");
+            return done(null, false);
+          }
+          
+          // Verificando password
+          const passwordValid = await comparePasswords(password, user.password);
+          console.log("Validación de password:", passwordValid ? "Éxito" : "Fallida");
+          
+          if (!passwordValid) {
+            return done(null, false);
+          } else {
+            return done(null, user);
+          }
+        } catch (error) {
+          console.error("Error en estrategia de autenticación:", error);
+          return done(error);
         }
       }
     ),

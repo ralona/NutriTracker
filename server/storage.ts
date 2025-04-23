@@ -99,19 +99,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserByEmail(email: string, includeInactive = false): Promise<User | undefined> {
-    let selectQuery = db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    console.log(`Buscando usuario con email: ${email}, includeInactive: ${includeInactive}`);
     
-    // Si no se incluyen inactivos, solo buscar activos
-    if (!includeInactive) {
-      selectQuery = db.select().from(users).where(
-        and(
+    // Construir la query correctamente
+    const whereConditions = includeInactive 
+      ? eq(users.email, email.toLowerCase())
+      : and(
           eq(users.email, email.toLowerCase()),
           eq(users.active, true)
-        )
-      );
+        );
+    
+    const results = await db.select().from(users).where(whereConditions);
+    
+    console.log(`Resultados encontrados: ${results.length}`);
+    if (results.length > 0) {
+      console.log(`Usuario encontrado - ID: ${results[0].id}, Activo: ${results[0].active}, Rol: ${results[0].role}`);
     }
     
-    const results = await selectQuery;
     return results.length > 0 ? results[0] : undefined;
   }
   

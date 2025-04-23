@@ -14,9 +14,15 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 
 // Schema for the form
 const mealFormSchema = z.object({
@@ -89,37 +95,40 @@ export default function MealForm({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de comida</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value} 
-                  disabled={!!mealType || isSubmitting}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el tipo de comida" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.values(MealType).map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Mostramos el selector de tipo solo si no viene predefinido */}
+          {!mealType && (
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de comida</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value} 
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona el tipo de comida" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(MealType).map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
@@ -154,111 +163,123 @@ export default function MealForm({
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="calories"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Calorías (opcional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Ej: 300" 
-                      {...field}
-                      value={field.value === undefined ? "" : field.value}
-                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
-                      disabled={isSubmitting}
+          {/* Campos opcionales en un acordeón */}
+          <Accordion type="single" collapsible className="w-full border rounded-md p-2 bg-gray-50">
+            <AccordionItem value="optional-fields" className="border-none">
+              <AccordionTrigger className="py-2 px-1 hover:no-underline">
+                <span className="text-sm font-medium text-gray-700">Información adicional (opcional)</span>
+              </AccordionTrigger>
+              <AccordionContent className="px-1 pt-2">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="calories"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Calorías</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Ej: 300" 
+                              {...field}
+                              value={field.value === undefined ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hora (opcional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="time" 
-                      {...field}
-                      value={field.value || ""}
-                      disabled={isSubmitting}
+                    <FormField
+                      control={form.control}
+                      name="time"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hora</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="time" 
+                              {...field}
+                              value={field.value || ""}
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="duration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duración (minutos) (opcional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Ej: 15" 
-                      {...field}
-                      value={field.value === undefined ? "" : field.value}
-                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
-                      disabled={isSubmitting}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duración (minutos)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Ej: 15" 
+                              {...field}
+                              value={field.value === undefined ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="waterIntake"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Agua consumida (litros) (opcional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.1"
-                      placeholder="Ej: 0.5" 
-                      {...field}
-                      value={field.value === undefined ? "" : field.value}
-                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
-                      disabled={isSubmitting}
+                    <FormField
+                      control={form.control}
+                      name="waterIntake"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Agua consumida (litros)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.1"
+                              placeholder="Ej: 0.5" 
+                              {...field}
+                              value={field.value === undefined ? "" : field.value}
+                              onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                  </div>
 
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Notas personales (opcional)</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Añade notas personales sobre cómo te sentiste con esta comida" 
-                    {...field}
-                    value={field.value || ""}
-                    disabled={isSubmitting}
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notas personales</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Añade notas personales sobre cómo te sentiste con esta comida" 
+                            {...field}
+                            value={field.value || ""}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           <div className="flex justify-end space-x-2 pt-2">
             <Button 

@@ -169,14 +169,19 @@ export default function WeeklyView() {
   };
 
   // Handle form submission for adding meal
-  const handleAddMeal = (mealData: InsertMeal) => {
+  const handleAddMeal = (mealData: Partial<InsertMeal>) => {
     if (!user || !selectedDay) return;
     
-    createMealMutation.mutate({
+    // Asegurarse de que todos los datos requeridos estén presentes
+    const completeData = {
       ...mealData,
       userId: user.id,
-      date: parseISO(selectedDay)
-    });
+      date: parseISO(selectedDay),
+      type: mealData.type || selectedMealType || MealType.BREAKFAST,
+      name: mealData.name || ""
+    };
+    
+    createMealMutation.mutate(completeData as InsertMeal);
   };
 
   // Handle form submission for updating meal
@@ -354,7 +359,7 @@ export default function WeeklyView() {
       
       {/* Add Meal Dialog */}
       <Dialog open={isAddingMeal} onOpenChange={setIsAddingMeal}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
               Añadir {selectedMealType} - {selectedDay && format(parseISO(selectedDay), "d 'de' MMMM", { locale: es })}
@@ -371,7 +376,7 @@ export default function WeeklyView() {
       
       {/* Edit Meal Dialog */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
               Editar {selectedMeal?.type} - {selectedMeal && format(new Date(selectedMeal.date), "d 'de' MMMM", { locale: es })}

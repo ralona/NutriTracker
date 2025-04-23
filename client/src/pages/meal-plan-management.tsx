@@ -109,13 +109,13 @@ export default function MealPlanManagement() {
   });
   
   // Fetch clients for the nutritionist
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [] } = useQuery<any[]>({
     queryKey: ["/api/clients"],
     enabled: user?.role === "nutritionist",
   });
   
   // Fetch meal plans created by the nutritionist
-  const { data: mealPlans = [], isLoading: isLoadingMealPlans } = useQuery({
+  const { data: mealPlans = [], isLoading: isLoadingMealPlans } = useQuery<MealPlanWithDetails[]>({
     queryKey: ["/api/meal-plans/nutritionist"],
     enabled: user?.role === "nutritionist",
   });

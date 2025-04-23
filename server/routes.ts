@@ -12,8 +12,8 @@ import {
   insertMealPlanDetailSchema,
   MealType,
   DailyMeals,
-  mealPlans,
-  mealPlanDetails
+  mealPlans as mealPlansTable,
+  mealPlanDetails as mealPlanDetailsTable
 } from "@shared/schema";
 import { eq, and, inArray, between, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -758,9 +758,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const [updatedMealPlan] = await db
-        .update(mealPlans)
+        .update(mealPlansTable)
         .set({ published })
-        .where(eq(mealPlans.id, mealPlanId))
+        .where(eq(mealPlansTable.id, mealPlanId))
         .returning();
       
       res.json({
@@ -780,17 +780,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener todos los planes creados por el nutricionista
       const plans = await db
         .select()
-        .from(mealPlans)
-        .where(eq(mealPlans.nutritionistId, nutritionistId))
-        .orderBy(mealPlans.createdAt);
+        .from(mealPlansTable)
+        .where(eq(mealPlansTable.nutritionistId, nutritionistId))
+        .orderBy(mealPlansTable.createdAt);
       
       // Para cada plan, obtener sus detalles
       const mealPlansWithDetails = await Promise.all(
         plans.map(async (plan) => {
           const details = await db
             .select()
-            .from(mealPlanDetails)
-            .where(eq(mealPlanDetails.mealPlanId, plan.id));
+            .from(mealPlanDetailsTable)
+            .where(eq(mealPlanDetailsTable.mealPlanId, plan.id));
           
           return {
             ...plan,

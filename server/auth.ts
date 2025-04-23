@@ -48,10 +48,11 @@ async function comparePasswords(supplied: string, stored: string) {
       return false;
     }
     
-    // Verificar formato del hash almacenado
+    // Caso especial: contraseña en texto plano (para usuarios migrando)
+    // Esto es temporal y solo para mantener compatibilidad con usuarios existentes
     if (!stored.includes('.')) {
-      console.log("Password almacenado con formato incorrecto: no contiene separador '.'");
-      return false;
+      console.log("Password almacenado en texto plano, comparando directamente");
+      return stored === supplied;
     }
     
     const [hashed, salt] = stored.split(".");

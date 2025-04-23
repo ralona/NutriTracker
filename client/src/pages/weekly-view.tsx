@@ -265,7 +265,14 @@ export default function WeeklyView() {
     <div className="space-y-6">
       {/* Header with date navigation */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Plan Semanal</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Plan Semanal</h1>
+          {user?.role === "client" && (
+            <p className="text-sm text-gray-500 mt-1">
+              Aquí verás el plan recomendado por tu nutricionista y podrás registrar lo que has comido durante la semana
+            </p>
+          )}
+        </div>
         <div className="flex items-center space-x-4">
           <Button 
             variant="outline" 
@@ -296,67 +303,94 @@ export default function WeeklyView() {
       </div>
       
       {/* Active Meal Plan */}
-      {activeMealPlan && activeMealPlan.published && (
-        <Card className="mb-6 border-green-200">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle className="text-lg flex items-center">
-                  <CalendarCheck className="h-5 w-5 mr-2 text-green-600" />
-                  Plan de comidas recomendado
-                  <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">Activo</Badge>
-                </CardTitle>
-                <CardDescription>
-                  {activeMealPlan.description}
-                </CardDescription>
+      {user?.role === "client" && (
+        isLoadingMealPlan ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary-500 border-r-2"></div>
+          </div>
+        ) : activeMealPlan && activeMealPlan.published ? (
+          <Card className="mb-6 border-green-200">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg flex items-center">
+                    <CalendarCheck className="h-5 w-5 mr-2 text-green-600" />
+                    Plan de comidas recomendado
+                    <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">Activo</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    {activeMealPlan.description}
+                  </CardDescription>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Semana del {format(new Date(activeMealPlan.weekStart), "d 'de' MMMM", { locale: es })} al {format(new Date(activeMealPlan.weekEnd), "d 'de' MMMM yyyy", { locale: es })}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                Semana del {format(new Date(activeMealPlan.weekStart), "d 'de' MMMM", { locale: es })} al {format(new Date(activeMealPlan.weekEnd), "d 'de' MMMM yyyy", { locale: es })}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="text-left p-2 bg-gray-100 text-xs font-medium">Comida</th>
-                    {weekDays.map((day) => (
-                      <th key={day.toString()} className="text-center p-2 bg-gray-100 text-xs font-medium">
-                        {format(day, "EEE d", { locale: es })}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(MealType).map(([type, label]) => (
-                    <tr key={type} className="border-b">
-                      <td className="text-left p-2 text-sm font-medium">{label}</td>
-                      {weekDays.map((day) => {
-                        const dayStr = format(day, "yyyy-MM-dd");
-                        const detail = getMealPlanDetail(dayStr, type);
-                        
-                        return (
-                          <td key={dayStr} className="text-center p-2">
-                            {detail ? (
-                              <div className="p-2 rounded bg-gray-50 text-xs text-left">
-                                {detail.description.length > 50 
-                                  ? `${detail.description.slice(0, 50)}...` 
-                                  : detail.description}
-                              </div>
-                            ) : (
-                              <span className="text-gray-300">-</span>
-                            )}
-                          </td>
-                        );
-                      })}
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="text-left p-2 bg-gray-100 text-xs font-medium">Comida</th>
+                      {weekDays.map((day) => (
+                        <th key={day.toString()} className="text-center p-2 bg-gray-100 text-xs font-medium">
+                          {format(day, "EEE d", { locale: es })}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </thead>
+                  <tbody>
+                    {Object.entries(MealType).map(([type, label]) => (
+                      <tr key={type} className="border-b">
+                        <td className="text-left p-2 text-sm font-medium">{label}</td>
+                        {weekDays.map((day) => {
+                          const dayStr = format(day, "yyyy-MM-dd");
+                          const detail = getMealPlanDetail(dayStr, type);
+                          
+                          return (
+                            <td key={dayStr} className="text-center p-2">
+                              {detail ? (
+                                <div className="p-2 rounded bg-gray-50 text-xs text-left">
+                                  {detail.description.length > 50 
+                                    ? `${detail.description.slice(0, 50)}...` 
+                                    : detail.description}
+                                </div>
+                              ) : (
+                                <span className="text-gray-300">-</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-6 border-gray-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Plan de comidas</CardTitle>
+              <CardDescription>
+                Aún no tienes un plan de comidas asignado por tu nutricionista.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="bg-gray-100 rounded-full p-4 mb-4">
+                  <Calendar className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Plan pendiente</h3>
+                <p className="text-gray-500 max-w-md">
+                  Tu nutricionista aún no ha publicado un plan de comidas para ti. 
+                  Una vez que lo haga, aparecerá aquí con las recomendaciones personalizadas.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* Weekly Meal Table */}

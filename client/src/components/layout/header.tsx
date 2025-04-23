@@ -60,14 +60,14 @@ export default function Header() {
             <>
               {user.role === "client" && (
                 <>
-                  <Link href="/meals/weekly">
-                    <span className={`text-sm font-medium ${location === "/meals/weekly" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
-                      Plan Semanal
-                    </span>
-                  </Link>
                   <Link href="/meals/daily">
                     <span className={`text-sm font-medium ${location === "/meals/daily" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
                       Comidas Diarias
+                    </span>
+                  </Link>
+                  <Link href="/meals/weekly">
+                    <span className={`text-sm font-medium ${location === "/meals/weekly" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
+                      Plan Semanal
                     </span>
                   </Link>
                 </>
@@ -135,10 +135,10 @@ export default function Header() {
                   {user.role === "client" && (
                     <>
                       <DropdownMenuItem className="md:hidden">
-                        <Link href="/meals/weekly">Plan Semanal</Link>
+                        <Link href="/meals/daily">Comidas Diarias</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem className="md:hidden">
-                        <Link href="/meals/daily">Comidas Diarias</Link>
+                        <Link href="/meals/weekly">Plan Semanal</Link>
                       </DropdownMenuItem>
                     </>
                   )}

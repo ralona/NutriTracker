@@ -408,12 +408,12 @@ export default function MealTracking() {
                                 {meal.comments.map((comment) => (
                                   <div key={comment.id} className="bg-gray-50 p-3 rounded-md text-sm">
                                     <div className="flex items-center justify-between mb-1">
-                                      <span className="font-medium">{comment.nutritionistName || 'Nutricionista'}</span>
+                                      <span className="font-medium">Nutricionista</span>
                                       <span className="text-xs text-gray-500">
                                         {format(new Date(comment.createdAt), "d MMM, yyyy", { locale: es })}
                                       </span>
                                     </div>
-                                    <p className="text-gray-700">{comment.text}</p>
+                                    <p className="text-gray-700">{comment.content}</p>
                                   </div>
                                 ))}
                               </div>

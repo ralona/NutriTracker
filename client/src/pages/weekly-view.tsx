@@ -393,39 +393,28 @@ export default function WeeklyView() {
         )
       )}
 
-      {/* Weekly Meal Table */}
-      {isLoading ? (
-        // Loading state
-        <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary-500 border-r-2"></div>
-        </div>
-      ) : (
-        <MealTable 
-          weekDays={weekDays}
-          meals={data?.meals || {}}
-          summaries={data?.summaries || []}
-          onAddMeal={startAddMeal}
-          onEditMeal={openMealEditModal}
-          isNutritionist={user?.role === "nutritionist"}
-        />
-      )}
-
-      {/* Add Meal Button */}
-      {user?.role !== "nutritionist" && (
-        <div className="mt-6 flex justify-end">
-          <Button 
-            onClick={() => {
-              setSelectedDay(format(new Date(), 'yyyy-MM-dd'));
-              setSelectedMealType(MealType.BREAKFAST);
-              setIsAddingMeal(true);
-            }}
-            className="inline-flex items-center px-4 py-2 font-medium"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Añadir comida
-          </Button>
-        </div>
-      )}
+      {/* Message about meal logging */}
+      <Card className="mb-6 border-gray-200">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="bg-gray-100 rounded-full p-4 mb-4">
+              <CalendarCheck className="h-10 w-10 text-primary" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Registro de comidas</h3>
+            <p className="text-gray-500 max-w-md mb-4">
+              Para registrar tus comidas y visualizarlas en formato semanal, ve a la sección "Comidas Diarias" 
+              y utiliza la vista semanal.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/'}
+              className="inline-flex items-center px-4 py-2 font-medium"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Ir a Comidas Diarias
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Add Meal Dialog */}
       <Dialog open={isAddingMeal} onOpenChange={setIsAddingMeal}>

@@ -42,6 +42,9 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
+    // Log para depuración
+    console.log("Comparando contraseñas");
+    
     // Si no hay password almacenado o suministrado, retornar false
     if (!stored || !supplied) {
       console.log("Password almacenado o suministrado está vacío");
@@ -50,18 +53,20 @@ async function comparePasswords(supplied: string, stored: string) {
     
     // Caso especial: contraseña en texto plano (para usuarios migrando)
     // Esto es temporal y solo para mantener compatibilidad con usuarios existentes
+    // Verificamos que no esté en formato hash.salt
     if (!stored.includes('.')) {
       console.log("Password almacenado en texto plano, comparando directamente");
       return stored === supplied;
     }
     
-    const [hashed, salt] = stored.split(".");
-    
-    // Si falta alguno de los componentes, retornar false
-    if (!hashed || !salt) {
-      console.log("Componentes de password incompletos");
+    // Para passwords hasheados con formato correcto (hash.salt)
+    const parts = stored.split(".");
+    if (parts.length !== 2) {
+      console.log("Formato de contraseña inválido");
       return false;
     }
+    
+    const [hashed, salt] = parts;
     
     // Convertir el hash almacenado a buffer
     const hashedBuf = Buffer.from(hashed, "hex");
@@ -69,19 +74,8 @@ async function comparePasswords(supplied: string, stored: string) {
     // Generar hash del password suministrado con la misma sal
     const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
     
-    // Verificar que los buffers tienen el mismo tamaño
-    if (hashedBuf.length !== suppliedBuf.length) {
-      console.log(`Los buffers tienen tamaños diferentes: ${hashedBuf.length} vs ${suppliedBuf.length}`);
-      return false;
-    }
-    
     // Usar timingSafeEqual para evitar ataques de temporización
-    const result = timingSafeEqual(hashedBuf, suppliedBuf);
-    
-    // Guardar resultado para debug
-    console.log(`Resultado de comparación de passwords: ${result ? 'Éxito' : 'Fallo'}`);
-    
-    return result;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
   } catch (error) {
     console.error("Error al comparar passwords:", error);
     return false;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { format, parseISO, addDays, subDays } from "date-fns";
+import { format, parseISO, addDays, subDays, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -14,9 +14,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus, Edit } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Edit, Calendar, CalendarRange } from "lucide-react";
 import MealForm from "@/components/forms/meal-form";
 import { capitalizeFirstLetter } from "@/lib/utils";
+import MealTable from "@/components/meal-table";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 export default function MealTracking() {
   const { user } = useAuth();
@@ -32,15 +39,49 @@ export default function MealTracking() {
   const [isAddingMeal, setIsAddingMeal] = useState<boolean>(false);
   const [editingMeal, setEditingMeal] = useState<number | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<MealTypeValues | null>(null);
+  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
 
-  // Fetch meals for the selected date
+  // Para la vista semanal
+  const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  
+  // Función para navegar a la semana anterior
+  const goToPreviousWeek = () => {
+    setSelectedWeek(prev => subWeeks(prev, 1));
+  };
+  
+  // Función para navegar a la semana siguiente
+  const goToNextWeek = () => {
+    setSelectedWeek(prev => addWeeks(prev, 1));
+  };
+  
+  // Función para ir a la semana actual
+  const goToCurrentWeek = () => {
+    setSelectedWeek(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  };
+  
+  // Generar los días de la semana
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(selectedWeek, i));
+
+  // Fetch meals for the selected date (vista diaria)
   const { data: meals, isLoading } = useQuery<DailyMeals>({
     queryKey: ["/api/meals/daily", selectedDate.toISOString()],
     queryFn: async ({ queryKey }) => {
       const response = await fetch(`/api/meals/daily?date=${queryKey[1]}`);
       if (!response.ok) throw new Error("Error fetching meals");
       return response.json();
-    }
+    },
+    enabled: viewMode === "daily"
+  });
+  
+  // Fetch weekly meals (vista semanal)
+  const { data: weeklyData, isLoading: isLoadingWeekly } = useQuery({
+    queryKey: ["/api/meals/weekly", selectedWeek.toISOString()],
+    queryFn: async ({ queryKey }) => {
+      const response = await fetch(`/api/meals/weekly?startDate=${queryKey[1]}`);
+      if (!response.ok) throw new Error("Error fetching weekly meals");
+      return response.json();
+    },
+    enabled: viewMode === "weekly"
   });
 
   // Create meal mutation
@@ -200,76 +241,100 @@ export default function MealTracking() {
     return null;
   };
 
+  // Helper function para ir a la comida del día seleccionado en vista semanal
+  const goToSelectedDayMeal = (date: Date) => {
+    setSelectedDate(date);
+    setViewMode("daily");
+  };
+  
   return (
     <div className="space-y-6">
-      {/* Header with date navigation */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Comidas de Hoy</h1>
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={goToPreviousDay}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="px-3 py-2 text-gray-600 font-medium">
-            {format(selectedDate, "d 'de' MMMM, yyyy", { locale: es })}
-          </div>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={goToNextDay}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={goToToday}
-          >
-            Hoy
-          </Button>
-        </div>
+      {/* Header con título y selector de vista */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Registro de Comidas</h1>
+        
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "daily" | "weekly")} className="w-full md:w-auto">
+          <TabsList className="grid w-full md:w-80 grid-cols-2">
+            <TabsTrigger value="daily" className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              <span>Vista Diaria</span>
+            </TabsTrigger>
+            <TabsTrigger value="weekly" className="flex items-center gap-1">
+              <CalendarRange className="h-4 w-4" />
+              <span>Vista Semanal</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Meal tracking content */}
-      <div className="space-y-6">
-        {/* Dialog modal for adding/editing meal */}
-        <Dialog open={isAddingMeal || editingMeal !== null} onOpenChange={(open) => {
-          if (!open) cancelForm();
-        }}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>
-                {isAddingMeal ? `Añadir ${selectedMealType}` : 'Editar comida'}
-              </DialogTitle>
-              <DialogDescription>
-                {isAddingMeal 
-                  ? 'Registra los detalles de tu comida' 
-                  : 'Modifica los detalles de esta comida'}
-              </DialogDescription>
-            </DialogHeader>
-            <MealForm 
-              initialData={editingMeal ? getMealById(editingMeal) || undefined : undefined}
-              mealType={selectedMealType}
-              onSubmit={(data) => {
-                if (isAddingMeal) {
-                  handleAddMeal(data as InsertMeal);
-                } else {
-                  handleUpdateMeal(data);
-                }
-              }}
-              onCancel={cancelForm}
-              isSubmitting={createMealMutation.isPending || updateMealMutation.isPending}
-            />
-          </DialogContent>
-        </Dialog>
+      {/* Dialog modal for adding/editing meal */}
+      <Dialog open={isAddingMeal || editingMeal !== null} onOpenChange={(open) => {
+        if (!open) cancelForm();
+      }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {isAddingMeal ? `Añadir ${selectedMealType}` : 'Editar comida'}
+            </DialogTitle>
+            <DialogDescription>
+              {isAddingMeal 
+                ? 'Registra los detalles de tu comida' 
+                : 'Modifica los detalles de esta comida'}
+            </DialogDescription>
+          </DialogHeader>
+          <MealForm 
+            initialData={editingMeal ? getMealById(editingMeal) || undefined : undefined}
+            mealType={selectedMealType}
+            onSubmit={(data) => {
+              if (isAddingMeal) {
+                handleAddMeal(data as InsertMeal);
+              } else {
+                handleUpdateMeal(data);
+              }
+            }}
+            onCancel={cancelForm}
+            isSubmitting={createMealMutation.isPending || updateMealMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
 
-        {/* Meals list */}
+      {/* Content based on view mode */}
+      <TabsContent value="daily" className="m-0">
+        {/* Daily view navigation */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-sm text-gray-500">
+            {format(selectedDate, "EEEE d 'de' MMMM, yyyy", { locale: es })}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToPreviousDay}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={goToToday}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Hoy
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToNextDay}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Daily view content */}
         {isLoading ? (
           // Loading state
           <div className="flex justify-center py-10">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary-500 border-r-2"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary border-r-2"></div>
           </div>
         ) : (
           <>
@@ -278,7 +343,7 @@ export default function MealTracking() {
               const mealsList = getMealsByType(mealType);
               
               return (
-                <Card key={mealType} className="border border-gray-200">
+                <Card key={mealType} className="border border-gray-200 mb-6">
                   <CardHeader className="flex flex-row items-center justify-between py-4 px-6">
                     <div>
                       <h3 className="text-lg font-medium text-gray-900">{mealType}</h3>
@@ -292,7 +357,7 @@ export default function MealTracking() {
                       variant="ghost" 
                       size="sm" 
                       onClick={() => startAddMeal(mealType)}
-                      className="text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+                      className="text-primary hover:text-primary/90 hover:bg-primary-50"
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       {mealsList.length > 0 ? 'Añadir otro' : 'Añadir'}
@@ -341,32 +406,32 @@ export default function MealTracking() {
                               <div className="mt-4">
                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Comentarios</h4>
                                 {meal.comments.map((comment) => (
-                                  <div key={comment.id} className="bg-gray-50 p-3 rounded-md text-sm text-gray-600 italic">
-                                    {comment.content}
+                                  <div key={comment.id} className="bg-gray-50 p-3 rounded-md text-sm">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-medium">{comment.nutritionistName || 'Nutricionista'}</span>
+                                      <span className="text-xs text-gray-500">
+                                        {format(new Date(comment.createdAt), "d MMM, yyyy", { locale: es })}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-700">{comment.text}</p>
                                   </div>
                                 ))}
-                              </div>
-                            )}
-                            
-                            {/* Notes section */}
-                            {meal.notes && (
-                              <div className="mt-4">
-                                <h4 className="text-sm font-medium text-gray-700 mb-2">Notas</h4>
-                                <p className="text-sm text-gray-600">{meal.notes}</p>
                               </div>
                             )}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500 italic">No hay comida registrada</p>
+                      <div className="text-center py-4">
+                        <p className="text-gray-500 text-sm">No has registrado {mealType.toLowerCase()} para este día</p>
                         <Button 
-                          variant="link" 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2" 
                           onClick={() => startAddMeal(mealType)}
-                          className="mt-2 text-primary-600"
                         >
-                          Registrar {mealType.toLowerCase()}
+                          <Plus className="h-4 w-4 mr-1" />
+                          Añadir {mealType.toLowerCase()}
                         </Button>
                       </div>
                     )}
@@ -374,21 +439,79 @@ export default function MealTracking() {
                 </Card>
               );
             })}
-            
-            {/* Add Meal Button */}
-            <div className="mt-6">
-              <Button 
-                className="w-full py-6"
-                variant="outline"
-                onClick={() => startAddMeal(MealType.BREAKFAST)}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Añadir otra comida
-              </Button>
-            </div>
           </>
         )}
-      </div>
+      </TabsContent>
+
+      {/* Weekly view */}
+      <TabsContent value="weekly" className="m-0">
+        {/* Weekly view navigation */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-sm text-gray-500">
+            Semana del {format(weekDays[0], "d 'de' MMMM", { locale: es })} al {format(weekDays[6], "d 'de' MMMM, yyyy", { locale: es })}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToPreviousWeek}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={goToCurrentWeek}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Esta Semana
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToNextWeek}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Weekly view content - Meal table */}
+        {isLoadingWeekly ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary border-r-2"></div>
+          </div>
+        ) : weeklyData?.meals ? (
+          <Card>
+            <CardContent className="p-4">
+              <MealTable 
+                weekDays={weekDays}
+                meals={weeklyData.meals}
+                summaries={weeklyData.summaries || []}
+                onAddMeal={(day, mealType) => {
+                  const date = new Date(day);
+                  goToSelectedDayMeal(date);
+                  // Pequeña espera para asegurar que cambia de vista antes de abrir el modal
+                  setTimeout(() => {
+                    startAddMeal(mealType);
+                  }, 100);
+                }}
+                onEditMeal={(meal) => {
+                  const date = new Date(meal.date);
+                  goToSelectedDayMeal(date);
+                  // Pequeña espera para asegurar que cambia de vista antes de abrir el modal
+                  setTimeout(() => {
+                    startEditMeal(meal.id);
+                  }, 100);
+                }}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="text-center py-10 border rounded-lg bg-gray-50">
+            <p className="text-gray-500">No hay comidas registradas para esta semana</p>
+          </div>
+        )}
+      </TabsContent>
     </div>
   );
 }

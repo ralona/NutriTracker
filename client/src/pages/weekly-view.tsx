@@ -35,11 +35,7 @@ export default function WeeklyView() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
-  const [isAddingMeal, setIsAddingMeal] = useState<boolean>(false);
-  const [selectedMealType, setSelectedMealType] = useState<MealTypeValues | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [selectedMeal, setSelectedMeal] = useState<MealWithComments | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  // Solo necesitamos el estado para la semana seleccionada
 
   // Calculate week range for display
   const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
@@ -78,116 +74,7 @@ export default function WeeklyView() {
     }
   });
 
-  // Create meal mutation
-  const createMealMutation = useMutation({
-    mutationFn: async (mealData: InsertMeal) => {
-      try {
-        const res = await apiRequest("POST", "/api/meals", mealData);
-        const data = await res.json();
-        
-        if (!res.ok) {
-          if (data.errors) {
-            // Si hay errores de validación, los convertimos a un mensaje amigable
-            const errorMessages = data.errors.map((err: any) => {
-              const field = err.path?.[0] || "campo";
-              return `${field}: ${err.message}`;
-            }).join(", ");
-            throw new Error(`Errores en el formulario: ${errorMessages}`);
-          }
-          throw new Error(data.message || "Error al registrar la comida");
-        }
-        
-        return data;
-      } catch (error) {
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/meals/weekly"] });
-      setIsAddingMeal(false);
-      setSelectedMealType(null);
-      setSelectedDay(null);
-      toast({
-        title: "Comida registrada",
-        description: "Tu comida se ha registrado correctamente"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error al registrar comida",
-        description: (error as Error).message || "No se pudo registrar la comida",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Update meal mutation
-  const updateMealMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertMeal> }) => {
-      try {
-        const res = await apiRequest("PATCH", `/api/meals/${id}`, data);
-        const responseData = await res.json();
-        
-        if (!res.ok) {
-          if (responseData.errors) {
-            // Si hay errores de validación, los convertimos a un mensaje amigable
-            const errorMessages = responseData.errors.map((err: any) => {
-              const field = err.path?.[0] || "campo";
-              return `${field}: ${err.message}`;
-            }).join(", ");
-            throw new Error(`Errores en el formulario: ${errorMessages}`);
-          }
-          throw new Error(responseData.message || "Error al actualizar la comida");
-        }
-        
-        return responseData;
-      } catch (error) {
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/meals/weekly"] });
-      setIsEditModalOpen(false);
-      setSelectedMeal(null);
-      toast({
-        title: "Comida actualizada",
-        description: "La comida se ha actualizado correctamente"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error al actualizar comida",
-        description: (error as Error).message || "No se pudo actualizar la comida",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Create comment mutation
-  const createCommentMutation = useMutation({
-    mutationFn: async ({ mealId, content }: { mealId: number; content: string }) => {
-      const res = await apiRequest("POST", "/api/comments", {
-        mealId,
-        nutritionistId: user?.id,
-        content
-      });
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/meals/weekly"] });
-      toast({
-        title: "Comentario añadido",
-        description: "El comentario se ha añadido correctamente"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo añadir el comentario",
-        variant: "destructive"
-      });
-    }
-  });
+  // Ya no necesitamos mutaciones para manipular comidas en esta vista
 
   // Navigate to previous week
   const goToPreviousWeek = () => {
@@ -204,44 +91,7 @@ export default function WeeklyView() {
     setSelectedWeek(new Date());
   };
 
-  // Handle form submission for adding meal
-  const handleAddMeal = (mealData: Partial<InsertMeal>) => {
-    if (!user || !selectedDay) return;
-    
-    // Asegurarse de que todos los datos requeridos estén presentes
-    const completeData = {
-      ...mealData,
-      userId: user.id,
-      date: parseISO(selectedDay),
-      type: mealData.type || selectedMealType || MealType.BREAKFAST,
-      name: mealData.name || ""
-    };
-    
-    createMealMutation.mutate(completeData as InsertMeal);
-  };
-
-  // Handle form submission for updating meal
-  const handleUpdateMeal = (mealData: Partial<InsertMeal>) => {
-    if (!selectedMeal) return;
-    
-    updateMealMutation.mutate({
-      id: selectedMeal.id,
-      data: mealData
-    });
-  };
-
-  // Start adding a meal
-  const startAddMeal = (day: string, mealType: MealTypeValues) => {
-    setSelectedDay(day);
-    setSelectedMealType(mealType);
-    setIsAddingMeal(true);
-  };
-
-  // Open meal edit modal
-  const openMealEditModal = (meal: MealWithComments) => {
-    setSelectedMeal(meal);
-    setIsEditModalOpen(true);
-  };
+  // Ya no necesitamos funciones de manipulación de comidas en esta vista
 
   // Get nutrition summary for a day
   const getNutritionSummary = (day: string) => {
@@ -269,7 +119,7 @@ export default function WeeklyView() {
           <h1 className="text-2xl font-bold text-gray-900">Plan Semanal</h1>
           {user?.role === "client" && (
             <p className="text-sm text-gray-500 mt-1">
-              Aquí verás el plan recomendado por tu nutricionista y podrás registrar lo que has comido durante la semana
+              Aquí verás exclusivamente el plan de alimentación recomendado por tu nutricionista
             </p>
           )}
         </div>
@@ -416,50 +266,7 @@ export default function WeeklyView() {
         </CardContent>
       </Card>
       
-      {/* Add Meal Dialog */}
-      <Dialog open={isAddingMeal} onOpenChange={setIsAddingMeal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>
-              Añadir {selectedMealType} - {selectedDay && format(parseISO(selectedDay), "d 'de' MMMM", { locale: es })}
-            </DialogTitle>
-          </DialogHeader>
-          <MealForm 
-            mealType={selectedMealType}
-            onSubmit={handleAddMeal}
-            onCancel={() => setIsAddingMeal(false)}
-            isSubmitting={createMealMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Meal Dialog */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>
-              Editar {selectedMeal?.type} - {selectedMeal && format(new Date(selectedMeal.date), "d 'de' MMMM", { locale: es })}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedMeal && (
-            <MealForm 
-              initialData={selectedMeal}
-              onSubmit={handleUpdateMeal}
-              onCancel={() => setIsEditModalOpen(false)}
-              isSubmitting={updateMealMutation.isPending}
-              addComment={(content) => {
-                if (!user || !selectedMeal) return;
-                createCommentMutation.mutate({
-                  mealId: selectedMeal.id,
-                  content
-                });
-              }}
-              isNutritionist={user?.role === "nutritionist"}
-              comments={selectedMeal.comments || []}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* No forms for adding/editing meals in Weekly Plan view */}
     </div>
   );
 }

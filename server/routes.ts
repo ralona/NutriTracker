@@ -11,8 +11,10 @@ import {
   insertMealPlanSchema,
   insertMealPlanDetailSchema,
   MealType,
-  DailyMeals
+  DailyMeals,
+  mealPlans
 } from "@shared/schema";
+import { eq, and, inArray, between } from "drizzle-orm";
 import { z } from "zod";
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, format, addDays, parseISO } from "date-fns";
 
@@ -677,7 +679,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/meal-plans/active", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const mealPlan = await storage.getActiveMealPlanForUser(userId);
+      const isNutritionist = req.user!.role === 'nutritionist';
+      const mealPlan = await storage.getActiveMealPlanForUser(userId, isNutritionist);
       
       if (!mealPlan) {
         return res.status(404).json({ message: "No hay un plan de comidas activo" });
@@ -727,6 +730,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deactivateMealPlan(mealPlanId);
       
       res.json({ message: "Plan de comidas desactivado con éxito" });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Publicar o despublicar un plan de comidas
+  app.post("/api/meal-plans/:id/publish", isNutritionist, async (req, res) => {
+    try {
+      const mealPlanId = Number(req.params.id);
+      const { published } = req.body;
+      
+      if (published === undefined) {
+        return res.status(400).json({ message: "Se requiere el campo 'published'" });
+      }
+      
+      const mealPlan = await storage.getMealPlanById(mealPlanId);
+      if (!mealPlan) {
+        return res.status(404).json({ message: "Plan de comidas no encontrado" });
+      }
+      
+      // Verificar que el nutricionista que intenta actualizar es el creador del plan
+      if (mealPlan.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No autorizado a modificar este plan" });
+      }
+      
+      const [updatedMealPlan] = await db
+        .update(mealPlans)
+        .set({ published })
+        .where(eq(mealPlans.id, mealPlanId))
+        .returning();
+      
+      res.json({
+        message: published ? "Plan de comidas publicado correctamente" : "Plan de comidas despublicado correctamente", 
+        mealPlan: updatedMealPlan
+      });
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
     }

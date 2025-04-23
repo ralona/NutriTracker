@@ -24,10 +24,12 @@ const mealFormSchema = z.object({
     message: "Tipo de comida no válido"
   }),
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  description: z.string().optional(),
-  calories: z.coerce.number().min(0, "Las calorías no pueden ser negativas").optional(),
-  time: z.string().optional(),
-  notes: z.string().optional()
+  description: z.string().optional().nullable(),
+  calories: z.coerce.number().min(0, "Las calorías no pueden ser negativas").optional().nullable(),
+  time: z.string().optional().nullable(),
+  duration: z.coerce.number().min(1, "La duración debe ser mayor a 0").optional().nullable(),
+  waterIntake: z.coerce.number().min(0, "La cantidad de agua no puede ser negativa").optional().nullable(),
+  notes: z.string().optional().nullable()
 });
 
 type MealFormValues = z.infer<typeof mealFormSchema>;
@@ -62,6 +64,8 @@ export default function MealForm({
     description: initialData?.description || "",
     calories: initialData?.calories || undefined,
     time: initialData?.time || "",
+    duration: initialData?.duration || undefined,
+    waterIntake: initialData?.waterIntake || undefined,
     notes: initialData?.notes || ""
   };
 
@@ -183,6 +187,51 @@ export default function MealForm({
                       type="time" 
                       {...field}
                       value={field.value || ""}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="duration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duración (minutos) (opcional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="Ej: 15" 
+                      {...field}
+                      value={field.value === undefined ? "" : field.value}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="waterIntake"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Agua consumida (litros) (opcional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.1"
+                      placeholder="Ej: 0.5" 
+                      {...field}
+                      value={field.value === undefined ? "" : field.value}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
                       disabled={isSubmitting}
                     />
                   </FormControl>

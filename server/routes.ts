@@ -1,8 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { createInvitation, verifyInvitationToken, activateInvitation } from "./invite";
+import { db } from "./db";
 import { 
   insertMealSchema, 
   insertCommentSchema, 
@@ -70,6 +71,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("DEBUG - Error:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+  
+  // Ruta administrativa para hashear todas las contraseñas en texto plano
+  // IMPORTANTE: Esta ruta debe eliminarse en producción
+  app.post("/api/admin/hash-passwords", async (req, res) => {
+    try {
+      // Obtener usuarios con contraseñas sin hashear (aquellas que no contienen un punto)
+      const { rows } = await db.execute(
+        "SELECT * FROM users WHERE position('.' in password) = 0"
+      );
+      
+      console.log(`Encontrados ${rows.length} usuarios con contraseñas en texto plano`);
+      
+      const updates = [];
+      for (const user of rows) {
+        const hashedPassword = await hashPassword(user.password);
+        console.log(`Hasheando contraseña para usuario ${user.id}: ${user.email}`);
+        
+        updates.push(
+          storage.updateUser(user.id, {
+            password: hashedPassword
+          })
+        );
+      }
+      
+      await Promise.all(updates);
+      
+      res.json({ 
+        message: `Se hashearon las contraseñas de ${updates.length} usuarios` 
+      });
+    } catch (error) {
+      console.error("Error al hashear contraseñas:", error);
       res.status(500).json({ error: "Error interno del servidor" });
     }
   });

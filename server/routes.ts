@@ -605,7 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crear un nuevo plan de comidas
   app.post("/api/meal-plans", isNutritionist, async (req, res) => {
     try {
-      const { userId, weekStart, weekEnd, description } = req.body;
+      const { userId, weekStart, weekEnd, description, published = false } = req.body;
       
       // Verificar que el usuario existe y es cliente del nutricionista
       const client = await storage.getUser(userId);
@@ -625,6 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weekEnd,
         description,
         active: true,
+        published, // Por defecto, los planes se crean sin publicar
         createdAt: new Date()
       });
       
@@ -765,6 +766,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: published ? "Plan de comidas publicado correctamente" : "Plan de comidas despublicado correctamente", 
         mealPlan: updatedMealPlan
       });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Obtener todos los planes de comida creados por un nutricionista
+  app.get("/api/meal-plans/nutritionist", isNutritionist, async (req, res) => {
+    try {
+      const nutritionistId = req.user!.id;
+      
+      // Obtener todos los planes creados por el nutricionista
+      const mealPlansResult = await db
+        .select()
+        .from(mealPlans)
+        .where(eq(mealPlans.nutritionistId, nutritionistId))
+        .orderBy(desc(mealPlans.createdAt));
+      
+      // Para cada plan, obtener sus detalles
+      const mealPlansWithDetails = await Promise.all(
+        mealPlansResult.map(async (plan) => {
+          const details = await db
+            .select()
+            .from(mealPlanDetails)
+            .where(eq(mealPlanDetails.mealPlanId, plan.id));
+          
+          return {
+            ...plan,
+            details
+          };
+        })
+      );
+      
+      res.json(mealPlansWithDetails);
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
     }

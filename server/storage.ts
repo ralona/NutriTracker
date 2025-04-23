@@ -3,12 +3,14 @@ import {
   meals, type Meal, type InsertMeal,
   comments, type Comment, type InsertComment,
   nutritionSummaries, type NutritionSummary, type InsertNutritionSummary,
-  ClientWithSummary
+  mealPlans, type MealPlan, type InsertMealPlan,
+  mealPlanDetails, type MealPlanDetail, type InsertMealPlanDetail,
+  ClientWithSummary, MealPlanWithDetails
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and, between, desc, inArray } from "drizzle-orm";
+import { eq, and, between, desc, inArray, isNull, isNotNull } from "drizzle-orm";
 import { pool } from './db';
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -26,7 +28,8 @@ const PostgresSessionStore = connectPg(session);
 export interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByInviteToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User>;
   getClientsByNutritionistId(nutritionistId: number): Promise<User[]>;
@@ -49,6 +52,14 @@ export interface IStorage {
   createNutritionSummary(summary: InsertNutritionSummary): Promise<NutritionSummary>;
   updateNutritionSummary(id: number, summary: Partial<NutritionSummary>): Promise<NutritionSummary>;
   
+  // Meal Plan management
+  createMealPlan(mealPlan: InsertMealPlan): Promise<MealPlan>;
+  getMealPlanById(id: number): Promise<MealPlan | undefined>;
+  getMealPlanWithDetails(id: number): Promise<MealPlanWithDetails | undefined>;
+  getActiveMealPlanForUser(userId: number): Promise<MealPlanWithDetails | undefined>;
+  addMealPlanDetail(detail: InsertMealPlanDetail): Promise<MealPlanDetail>;
+  deactivateMealPlan(id: number): Promise<void>;
+  
   // Session store
   sessionStore: session.Store;
   
@@ -67,17 +78,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   async initialize(): Promise<void> {
-    const adminExists = await this.getUserByUsername("nutricionista");
+    const adminExists = await this.getUserByEmail("nutricion.cristinasanchez@gmail.com");
     
     if (!adminExists) {
       // Crear usuario nutricionista de ejemplo
       await this.createUser({
-        username: "nutricionista",
         password: await hashPassword("password123"),
         name: "Cristina Sánchez",
         email: "nutricion.cristinasanchez@gmail.com",
         role: "nutritionist",
         nutritionistId: null,
+        active: true
       });
     }
   }
@@ -87,18 +98,25 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username.toLowerCase()));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    return user;
+  }
+  
+  async getUserByInviteToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.inviteToken, token));
     return user;
   }
   
   async createUser(insertUser: InsertUser): Promise<User> {
+    const userData = {
+      ...insertUser,
+      email: insertUser.email.toLowerCase()
+    };
+    
     const [user] = await db
       .insert(users)
-      .values({
-        ...insertUser,
-        username: insertUser.username.toLowerCase(),
-      })
+      .values(userData)
       .returning();
     return user;
   }
@@ -123,7 +141,8 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(and(
         eq(users.role, "client"),
-        eq(users.nutritionistId, nutritionistId)
+        eq(users.nutritionistId, nutritionistId),
+        eq(users.active, true)
       ));
   }
   
@@ -190,12 +209,12 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createComment(commentData: InsertComment): Promise<Comment> {
+    // Asegurar que no intentamos insertar createdAt manualmente
+    const { createdAt, ...restData } = commentData as any;
+    
     const [comment] = await db
       .insert(comments)
-      .values({
-        ...commentData,
-        createdAt: new Date()
-      })
+      .values(restData)
       .returning();
     return comment;
   }
@@ -285,6 +304,101 @@ export class DatabaseStorage implements IStorage {
     
     return updatedSummary;
   }
+  
+  // Funciones de Plan de Comidas
+  async createMealPlan(mealPlanData: InsertMealPlan): Promise<MealPlan> {
+    // Desactivar planes activos existentes para este usuario
+    await db
+      .update(mealPlans)
+      .set({ active: false })
+      .where(and(
+        eq(mealPlans.userId, mealPlanData.userId),
+        eq(mealPlans.active, true)
+      ));
+    
+    // Crear el nuevo plan
+    const [mealPlan] = await db
+      .insert(mealPlans)
+      .values({
+        ...mealPlanData,
+        weekStart: new Date(mealPlanData.weekStart),
+        weekEnd: new Date(mealPlanData.weekEnd)
+      })
+      .returning();
+    
+    return mealPlan;
+  }
+  
+  async getMealPlanById(id: number): Promise<MealPlan | undefined> {
+    const [mealPlan] = await db
+      .select()
+      .from(mealPlans)
+      .where(eq(mealPlans.id, id));
+    
+    return mealPlan;
+  }
+  
+  async getMealPlanWithDetails(id: number): Promise<MealPlanWithDetails | undefined> {
+    const plan = await this.getMealPlanById(id);
+    
+    if (!plan) {
+      return undefined;
+    }
+    
+    const details = await db
+      .select()
+      .from(mealPlanDetails)
+      .where(eq(mealPlanDetails.mealPlanId, id));
+    
+    return {
+      ...plan,
+      details
+    };
+  }
+  
+  async getActiveMealPlanForUser(userId: number): Promise<MealPlanWithDetails | undefined> {
+    const [plan] = await db
+      .select()
+      .from(mealPlans)
+      .where(and(
+        eq(mealPlans.userId, userId),
+        eq(mealPlans.active, true)
+      ));
+    
+    if (!plan) {
+      return undefined;
+    }
+    
+    const details = await db
+      .select()
+      .from(mealPlanDetails)
+      .where(eq(mealPlanDetails.mealPlanId, plan.id));
+    
+    return {
+      ...plan,
+      details
+    };
+  }
+  
+  async addMealPlanDetail(detail: InsertMealPlanDetail): Promise<MealPlanDetail> {
+    const [mealPlanDetail] = await db
+      .insert(mealPlanDetails)
+      .values({
+        ...detail,
+        day: new Date(detail.day)
+      })
+      .returning();
+    
+    return mealPlanDetail;
+  }
+  
+  async deactivateMealPlan(id: number): Promise<void> {
+    await db
+      .update(mealPlans)
+      .set({ active: false })
+      .where(eq(mealPlans.id, id));
+  }
 }
 
+// Instancia única de la clase de almacenamiento
 export const storage = new DatabaseStorage();

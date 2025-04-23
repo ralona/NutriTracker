@@ -10,7 +10,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   role: text("role", { enum: ["client", "nutritionist"] }).notNull().default("client"),
-  nutritionistId: integer("nutritionist_id").references(() => users.id),
+  nutritionistId: integer("nutritionist_id"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -31,19 +31,21 @@ export const MealType = {
   DINNER: "Cena",
 } as const;
 
+// Arreglar la definición del tipo para usar correctamente los valores del enum
+const MEAL_TYPE_VALUES = ["Desayuno", "Media Mañana", "Comida", "Media Tarde", "Cena"] as const;
 export type MealTypeValues = typeof MealType[keyof typeof MealType];
 
 // Meal model
 export const meals = pgTable("meals", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull(),
   date: timestamp("date").notNull(),
-  type: text("type", { enum: Object.values(MealType) }).notNull(),
+  type: text("type").notNull(),
   name: text("name").notNull(),
-  description: text("description"),
-  calories: integer("calories"),
-  time: text("time"),
-  notes: text("notes"),
+  description: text("description").default(null),
+  calories: integer("calories").default(null),
+  time: text("time").default(null),
+  notes: text("notes").default(null),
 });
 
 export const insertMealSchema = createInsertSchema(meals).pick({
@@ -60,24 +62,26 @@ export const insertMealSchema = createInsertSchema(meals).pick({
 // Nutritionist comments model
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
-  mealId: integer("meal_id").notNull().references(() => meals.id),
-  nutritionistId: integer("nutritionist_id").notNull().references(() => users.id),
+  mealId: integer("meal_id").notNull(),
+  nutritionistId: integer("nutritionist_id").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  read: boolean("read").notNull().default(false),
 });
 
 export const insertCommentSchema = createInsertSchema(comments).pick({
   mealId: true,
   nutritionistId: true,
   content: true,
-});
+  read: true,
+}).omit({ createdAt: true }); // Omitir createdAt ya que tiene un valor por defecto
 
 // Nutrition summary model
 export const nutritionSummaries = pgTable("nutrition_summaries", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull(),
   date: timestamp("date").notNull(),
-  caloriesTotal: integer("calories_total"),
+  caloriesTotal: integer("calories_total").default(null),
 });
 
 export const insertNutritionSummarySchema = createInsertSchema(nutritionSummaries).pick({

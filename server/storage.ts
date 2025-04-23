@@ -6,9 +6,22 @@ import {
   ClientWithSummary
 } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, and, between, desc, inArray } from "drizzle-orm";
+import { pool } from './db';
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
-const MemoryStore = createMemoryStore(session);
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User management
@@ -37,212 +50,241 @@ export interface IStorage {
   updateNutritionSummary(id: number, summary: Partial<NutritionSummary>): Promise<NutritionSummary>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
+  
+  // Inicialización
+  initialize(): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private meals: Map<number, Meal>;
-  private comments: Map<number, Comment>;
-  private nutritionSummaries: Map<number, NutritionSummary>;
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
   
-  sessionStore: session.SessionStore;
-  
-  private userIdCounter: number;
-  private mealIdCounter: number;
-  private commentIdCounter: number;
-  private summaryIdCounter: number;
-
   constructor() {
-    this.users = new Map();
-    this.meals = new Map();
-    this.comments = new Map();
-    this.nutritionSummaries = new Map();
-    
-    this.userIdCounter = 1;
-    this.mealIdCounter = 1;
-    this.commentIdCounter = 1;
-    this.summaryIdCounter = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24 hours
-    });
-    
-    // Create sample nutritionist
-    this.createUser({
-      username: "nutricionista",
-      password: "password123",
-      name: "Cristina Sánchez",
-      email: "nutricion.cristinasanchez@gmail.com",
-      role: "nutritionist",
-      nutritionistId: null,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
     });
   }
-
-  // User management
+  
+  async initialize(): Promise<void> {
+    const adminExists = await this.getUserByUsername("nutricionista");
+    
+    if (!adminExists) {
+      // Crear usuario nutricionista de ejemplo
+      await this.createUser({
+        username: "nutricionista",
+        password: await hashPassword("password123"),
+        name: "Cristina Sánchez",
+        email: "nutricion.cristinasanchez@gmail.com",
+        role: "nutritionist",
+        nutritionistId: null,
+      });
+    }
+  }
+  
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
-
+  
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username.toLowerCase()));
+    return user;
   }
-
+  
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        username: insertUser.username.toLowerCase(),
+      })
+      .returning();
     return user;
   }
   
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
-    const user = await this.getUser(id);
-    if (!user) {
-      throw new Error("User not found");
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (!updatedUser) {
+      throw new Error("Usuario no encontrado");
     }
     
-    const updatedUser = { ...user, ...userData };
-    this.users.set(id, updatedUser);
     return updatedUser;
   }
   
   async getClientsByNutritionistId(nutritionistId: number): Promise<User[]> {
-    return Array.from(this.users.values()).filter(
-      (user) => user.nutritionistId === nutritionistId
-    );
+    return db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.role, "client"),
+        eq(users.nutritionistId, nutritionistId)
+      ));
   }
-
-  // Meal management
+  
   async getMealById(id: number): Promise<Meal | undefined> {
-    return this.meals.get(id);
+    const [meal] = await db.select().from(meals).where(eq(meals.id, id));
+    return meal;
   }
   
   async getMealsByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Meal[]> {
-    return Array.from(this.meals.values()).filter(
-      (meal) => meal.userId === userId && 
-                meal.date >= startDate && 
-                meal.date <= endDate
-    );
+    return db
+      .select()
+      .from(meals)
+      .where(and(
+        eq(meals.userId, userId),
+        between(meals.date, startDate, endDate)
+      ));
   }
   
   async createMeal(mealData: InsertMeal): Promise<Meal> {
-    const id = this.mealIdCounter++;
-    const meal: Meal = { ...mealData, id };
-    
-    // Ensure date is a Date object
-    if (typeof meal.date === 'string') {
-      meal.date = new Date(meal.date);
-    }
-    
-    this.meals.set(id, meal);
+    const [meal] = await db
+      .insert(meals)
+      .values({
+        ...mealData,
+        date: new Date(mealData.date),
+      })
+      .returning();
     return meal;
   }
   
   async updateMeal(id: number, mealData: Partial<Meal>): Promise<Meal> {
-    const meal = await this.getMealById(id);
-    if (!meal) {
-      throw new Error("Meal not found");
+    // Si hay una fecha en los datos, asegurar que sea un objeto Date
+    const newMealData = { ...mealData };
+    if (newMealData.date && typeof newMealData.date === 'string') {
+      newMealData.date = new Date(newMealData.date);
     }
     
-    const updatedMeal = { ...meal, ...mealData };
+    const [updatedMeal] = await db
+      .update(meals)
+      .set(newMealData)
+      .where(eq(meals.id, id))
+      .returning();
     
-    // Ensure date is a Date object
-    if (typeof updatedMeal.date === 'string') {
-      updatedMeal.date = new Date(updatedMeal.date);
+    if (!updatedMeal) {
+      throw new Error("Comida no encontrada");
     }
     
-    this.meals.set(id, updatedMeal);
     return updatedMeal;
   }
   
   async deleteMeal(id: number): Promise<void> {
-    this.meals.delete(id);
+    // Primero eliminar comentarios asociados
+    await db.delete(comments).where(eq(comments.mealId, id));
     
-    // Delete associated comments
-    const mealComments = await this.getCommentsByMealId(id);
-    for (const comment of mealComments) {
-      this.comments.delete(comment.id);
-    }
+    // Después eliminar la comida
+    await db.delete(meals).where(eq(meals.id, id));
   }
-
-  // Comment management
+  
   async getCommentsByMealId(mealId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values()).filter(
-      (comment) => comment.mealId === mealId
-    );
+    return db
+      .select()
+      .from(comments)
+      .where(eq(comments.mealId, mealId))
+      .orderBy(desc(comments.createdAt));
   }
   
   async createComment(commentData: InsertComment): Promise<Comment> {
-    const id = this.commentIdCounter++;
-    const createdAt = new Date();
-    const comment: Comment = { ...commentData, id, createdAt };
-    this.comments.set(id, comment);
+    const [comment] = await db
+      .insert(comments)
+      .values({
+        ...commentData,
+        createdAt: new Date()
+      })
+      .returning();
     return comment;
   }
   
   async getPendingCommentCount(userId: number): Promise<number> {
-    // Get all meals by user
-    const userMeals = Array.from(this.meals.values()).filter(
-      (meal) => meal.userId === userId
-    );
+    // Obtiene todas las comidas del usuario
+    const userMeals = await db
+      .select()
+      .from(meals)
+      .where(eq(meals.userId, userId));
     
-    // Get meal IDs
+    // Obtiene los IDs de las comidas
     const mealIds = userMeals.map(meal => meal.id);
     
-    // Count comments
-    return Array.from(this.comments.values()).filter(
-      (comment) => mealIds.includes(comment.mealId)
-    ).length;
+    if (mealIds.length === 0) {
+      return 0;
+    }
+    
+    // Cuenta los comentarios no leídos de las comidas del usuario
+    const unreadComments = await db
+      .select()
+      .from(comments)
+      .where(and(
+        eq(comments.read, false),
+        inArray(comments.mealId, mealIds)
+      ));
+    
+    return unreadComments.length;
   }
-
-  // Nutrition summary management
+  
   async getNutritionSummaryByDate(userId: number, date: Date): Promise<NutritionSummary | undefined> {
-    // Simplified version for in-memory - just look for same date
-    return Array.from(this.nutritionSummaries.values()).find(
-      (summary) => summary.userId === userId && 
-                    summary.date.toDateString() === date.toDateString()
-    );
+    // Convertir la fecha a UTC
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+    
+    const [summary] = await db
+      .select()
+      .from(nutritionSummaries)
+      .where(and(
+        eq(nutritionSummaries.userId, userId),
+        between(nutritionSummaries.date, startDate, endDate)
+      ));
+    
+    return summary;
   }
   
   async getNutritionSummariesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<NutritionSummary[]> {
-    return Array.from(this.nutritionSummaries.values()).filter(
-      (summary) => summary.userId === userId && 
-                    summary.date >= startDate && 
-                    summary.date <= endDate
-    );
+    return db
+      .select()
+      .from(nutritionSummaries)
+      .where(and(
+        eq(nutritionSummaries.userId, userId),
+        between(nutritionSummaries.date, startDate, endDate)
+      ));
   }
   
   async createNutritionSummary(summaryData: InsertNutritionSummary): Promise<NutritionSummary> {
-    const id = this.summaryIdCounter++;
-    const summary: NutritionSummary = { ...summaryData, id };
-    
-    // Ensure date is a Date object
-    if (typeof summary.date === 'string') {
-      summary.date = new Date(summary.date);
-    }
-    
-    this.nutritionSummaries.set(id, summary);
+    const [summary] = await db
+      .insert(nutritionSummaries)
+      .values({
+        ...summaryData,
+        date: new Date(summaryData.date),
+      })
+      .returning();
     return summary;
   }
   
   async updateNutritionSummary(id: number, summaryData: Partial<NutritionSummary>): Promise<NutritionSummary> {
-    const summary = this.nutritionSummaries.get(id);
-    if (!summary) {
-      throw new Error("Nutrition summary not found");
+    // Si hay una fecha en los datos, asegurar que sea un objeto Date
+    const newSummaryData = { ...summaryData };
+    if (newSummaryData.date && typeof newSummaryData.date === 'string') {
+      newSummaryData.date = new Date(newSummaryData.date);
     }
     
-    const updatedSummary = { ...summary, ...summaryData };
+    const [updatedSummary] = await db
+      .update(nutritionSummaries)
+      .set(newSummaryData)
+      .where(eq(nutritionSummaries.id, id))
+      .returning();
     
-    // Ensure date is a Date object
-    if (typeof updatedSummary.date === 'string') {
-      updatedSummary.date = new Date(updatedSummary.date);
+    if (!updatedSummary) {
+      throw new Error("Resumen nutricional no encontrado");
     }
     
-    this.nutritionSummaries.set(id, updatedSummary);
     return updatedSummary;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

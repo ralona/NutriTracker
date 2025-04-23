@@ -288,73 +288,75 @@ export default function MealTracking() {
                       {mealType === MealType.AFTERNOON_SNACK && <span className="text-sm text-gray-500">5:00 PM</span>}
                       {mealType === MealType.DINNER && <span className="text-sm text-gray-500">9:00 PM</span>}
                     </div>
-                    {!meal && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => startAddMeal(mealType)}
-                        className="text-primary-600 hover:text-primary-700 hover:bg-primary-50"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Añadir
-                      </Button>
-                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => startAddMeal(mealType)}
+                      className="text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {mealsList.length > 0 ? 'Añadir otro' : 'Añadir'}
+                    </Button>
                   </CardHeader>
                   <CardContent className="px-6 py-4">
-                    {meal ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-gray-800 font-medium">{meal.name}</p>
-                            {meal.description && (
-                              <p className="text-sm text-gray-500">{meal.description}</p>
-                            )}
-                            <div className="text-sm text-gray-500 mt-1 space-y-1">
-                              {meal.calories && (
-                                <p>{meal.calories} kcal</p>
-                              )}
-                              {meal.time && (
-                                <p>Hora: {meal.time}</p>
-                              )}
-                              {meal.duration && (
-                                <p>Duración: {meal.duration} minutos</p>
-                              )}
-                              {meal.waterIntake && (
-                                <p>Agua: {meal.waterIntake} litros</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => startEditMeal(meal.id)} 
-                              className="text-gray-500 hover:text-gray-700"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {/* Comments section */}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Comentarios</h4>
-                            {meal.comments.map((comment) => (
-                              <div key={comment.id} className="bg-gray-50 p-3 rounded-md text-sm text-gray-600 italic">
-                                {comment.content}
+                    {mealsList.length > 0 ? (
+                      <div className="space-y-6">
+                        {mealsList.map((meal) => (
+                          <div key={meal.id} className="space-y-4 border-b pb-4 last:border-b-0 last:pb-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-gray-800 font-medium">{meal.name}</p>
+                                {meal.description && (
+                                  <p className="text-sm text-gray-500">{meal.description}</p>
+                                )}
+                                <div className="text-sm text-gray-500 mt-1 space-y-1">
+                                  {meal.calories && (
+                                    <p>{meal.calories} kcal</p>
+                                  )}
+                                  {meal.time && (
+                                    <p>Hora: {meal.time}</p>
+                                  )}
+                                  {meal.duration && (
+                                    <p>Duración: {meal.duration} minutos</p>
+                                  )}
+                                  {meal.waterIntake && (
+                                    <p>Agua: {meal.waterIntake} litros</p>
+                                  )}
+                                </div>
                               </div>
-                            ))}
+                              <div className="flex space-x-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => startEditMeal(meal.id)} 
+                                  className="text-gray-500 hover:text-gray-700"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Comments section */}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Comentarios</h4>
+                                {meal.comments.map((comment) => (
+                                  <div key={comment.id} className="bg-gray-50 p-3 rounded-md text-sm text-gray-600 italic">
+                                    {comment.content}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Notes section */}
+                            {meal.notes && (
+                              <div className="mt-4">
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Notas</h4>
+                                <p className="text-sm text-gray-600">{meal.notes}</p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        
-                        {/* Notes section */}
-                        {meal.notes && (
-                          <div className="mt-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Notas</h4>
-                            <p className="text-sm text-gray-600">{meal.notes}</p>
-                          </div>
-                        )}
+                        ))}
                       </div>
                     ) : (
                       <div className="text-center py-8">

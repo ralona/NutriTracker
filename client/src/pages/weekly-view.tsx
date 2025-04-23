@@ -1,18 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { format, parseISO, addWeeks, subWeeks, startOfWeek, addDays } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { format, addWeeks, subWeeks, startOfWeek, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAuth } from "@/hooks/use-auth";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { DailyMeals, MealType, MealTypeValues, MealWithComments, InsertMeal, MealPlanWithDetails } from "@shared/schema";
+import { DailyMeals, MealType, MealPlanWithDetails } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
 import { 
   Card, 
   CardHeader, 
@@ -21,9 +14,7 @@ import {
   CardContent 
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Plus, Calendar, CalendarCheck } from "lucide-react";
-import MealForm from "@/components/forms/meal-form";
-import MealTable from "@/components/meal-table";
+import { ChevronLeft, ChevronRight, Calendar, CalendarCheck } from "lucide-react";
 import { formatDateToISO } from "@/lib/dates";
 
 type WeeklyMealsResponse = {

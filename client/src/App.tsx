@@ -14,7 +14,27 @@ import HomePage from "@/pages/home-page";
 import WeeklyView from "@/pages/weekly-view";
 import MealTracking from "@/pages/meal-tracking";
 import NutritionistDashboard from "@/pages/nutritionist-dashboard";
+import MealPlanManagement from "@/pages/meal-plan-management";
 import ActivateInvitationPage from "@/pages/activate-invitation";
+import { useAuth } from "@/hooks/use-auth";
+import { Redirect } from "wouter";
+
+// Ruta protegida específicamente para nutricionistas
+function NutritionistRoute({ path, component: Component }: { path: string; component: () => React.JSX.Element }) {
+  const { user } = useAuth();
+  
+  // Si no es nutricionista, redirigir a la página principal
+  if (user && user.role !== "nutritionist") {
+    return (
+      <Route path={path}>
+        <Redirect to="/" />
+      </Route>
+    );
+  }
+  
+  // Si es nutricionista, utilizar la ruta protegida normal
+  return <ProtectedRoute path={path} component={Component} />;
+}
 
 function Router() {
   return (
@@ -24,7 +44,8 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/meals/weekly" component={WeeklyView} />
       <ProtectedRoute path="/meals/daily" component={MealTracking} />
-      <ProtectedRoute path="/nutritionist" component={NutritionistDashboard} />
+      <NutritionistRoute path="/nutritionist" component={NutritionistDashboard} />
+      <NutritionistRoute path="/meal-plans" component={MealPlanManagement} />
       <Route component={NotFound} />
     </Switch>
   );

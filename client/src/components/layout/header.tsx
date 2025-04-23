@@ -74,11 +74,18 @@ export default function Header() {
               )}
               
               {user.role === "nutritionist" && (
-                <Link href="/nutritionist">
-                  <span className={`text-sm font-medium ${location === "/nutritionist" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
-                    Panel de Nutricionista
-                  </span>
-                </Link>
+                <>
+                  <Link href="/nutritionist">
+                    <span className={`text-sm font-medium ${location === "/nutritionist" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
+                      Panel de Nutricionista
+                    </span>
+                  </Link>
+                  <Link href="/meal-plans">
+                    <span className={`text-sm font-medium ${location === "/meal-plans" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
+                      Planes de Comida
+                    </span>
+                  </Link>
+                </>
               )}
             </>
           )}
@@ -136,9 +143,14 @@ export default function Header() {
                     </>
                   )}
                   {user.role === "nutritionist" && (
-                    <DropdownMenuItem className="md:hidden">
-                      <Link href="/nutritionist">Panel de Nutricionista</Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem className="md:hidden">
+                        <Link href="/nutritionist">Panel de Nutricionista</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="md:hidden">
+                        <Link href="/meal-plans">Planes de Comida</Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />

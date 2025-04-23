@@ -12,9 +12,10 @@ import {
   insertMealPlanDetailSchema,
   MealType,
   DailyMeals,
-  mealPlans
+  mealPlans,
+  mealPlanDetails
 } from "@shared/schema";
-import { eq, and, inArray, between } from "drizzle-orm";
+import { eq, and, inArray, between, desc } from "drizzle-orm";
 import { z } from "zod";
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, format, addDays, parseISO } from "date-fns";
 
@@ -777,15 +778,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nutritionistId = req.user!.id;
       
       // Obtener todos los planes creados por el nutricionista
-      const mealPlansResult = await db
+      const plans = await db
         .select()
         .from(mealPlans)
         .where(eq(mealPlans.nutritionistId, nutritionistId))
-        .orderBy(desc(mealPlans.createdAt));
+        .orderBy(mealPlans.createdAt);
       
       // Para cada plan, obtener sus detalles
       const mealPlansWithDetails = await Promise.all(
-        mealPlansResult.map(async (plan) => {
+        plans.map(async (plan) => {
           const details = await db
             .select()
             .from(mealPlanDetails)

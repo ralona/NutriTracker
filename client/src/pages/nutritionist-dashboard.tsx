@@ -10,9 +10,10 @@ import {
   BarChart, 
   MessageSquare, 
   CalendarRange, 
-  ChevronRight
+  ChevronRight,
+  UserPlus
 } from "lucide-react";
-import ClientCard from "@/components/client-card";
+import ClientManagement from "@/components/client-management";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -88,37 +89,7 @@ export default function NutritionistDashboard() {
             </TabsList>
             
             <TabsContent value="clients">
-              {isLoading ? (
-                <div className="flex justify-center py-10">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary-500 border-r-2"></div>
-                </div>
-              ) : (
-                <>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Mis Clientes</h3>
-                  
-                  {clients && clients.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {clients.map((client) => (
-                        <ClientCard 
-                          key={client.id}
-                          client={client}
-                          onClick={() => {
-                            // In a real app, navigate to client detail page
-                            console.log("View client:", client.id);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-gray-500">No hay clientes asignados</p>
-                      <Button variant="outline" className="mt-4">
-                        Añadir nuevo cliente
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
+              <ClientManagement />
             </TabsContent>
             
             <TabsContent value="stats">

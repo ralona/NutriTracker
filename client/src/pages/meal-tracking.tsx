@@ -178,10 +178,10 @@ export default function MealTracking() {
     setSelectedMealType(null);
   };
 
-  // Get the meal for a specific type
-  const getMealByType = (type: MealTypeValues) => {
-    if (!meals) return null;
-    return meals[type];
+  // Get the meals for a specific type
+  const getMealsByType = (type: MealTypeValues): MealWithComments[] => {
+    if (!meals) return [];
+    return meals[type] || [];
   };
 
   // Get a meal by ID
@@ -189,9 +189,11 @@ export default function MealTracking() {
     if (!meals) return null;
     
     for (const mealType of Object.values(MealType)) {
-      const meal = meals[mealType];
-      if (meal && meal.id === id) {
-        return meal;
+      const mealsList = meals[mealType] || [];
+      for (const meal of mealsList) {
+        if (meal && meal.id === id) {
+          return meal;
+        }
       }
     }
     
@@ -273,7 +275,7 @@ export default function MealTracking() {
           <>
             {/* Meal sections */}
             {Object.values(MealType).map((mealType) => {
-              const meal = getMealByType(mealType);
+              const mealsList = getMealsByType(mealType);
               
               return (
                 <Card key={mealType} className="border border-gray-200">

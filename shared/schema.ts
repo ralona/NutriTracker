@@ -100,6 +100,7 @@ export const mealPlans = pgTable("meal_plans", {
   description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   active: boolean("active").notNull().default(true),
+  published: boolean("published").notNull().default(false), // Indica si el plan es visible para el cliente
 });
 
 export const insertMealPlanSchema = createInsertSchema(mealPlans).pick({
@@ -109,6 +110,7 @@ export const insertMealPlanSchema = createInsertSchema(mealPlans).pick({
   weekEnd: true,
   description: true,
   active: true,
+  published: true,
 });
 
 // Detalles del plan de comidas

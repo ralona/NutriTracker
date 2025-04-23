@@ -56,7 +56,7 @@ export interface IStorage {
   createMealPlan(mealPlan: InsertMealPlan): Promise<MealPlan>;
   getMealPlanById(id: number): Promise<MealPlan | undefined>;
   getMealPlanWithDetails(id: number): Promise<MealPlanWithDetails | undefined>;
-  getActiveMealPlanForUser(userId: number): Promise<MealPlanWithDetails | undefined>;
+  getActiveMealPlanForUser(userId: number, isNutritionist?: boolean): Promise<MealPlanWithDetails | undefined>;
   addMealPlanDetail(detail: InsertMealPlanDetail): Promise<MealPlanDetail>;
   deactivateMealPlan(id: number): Promise<void>;
   
@@ -372,14 +372,23 @@ export class DatabaseStorage implements IStorage {
     };
   }
   
-  async getActiveMealPlanForUser(userId: number): Promise<MealPlanWithDetails | undefined> {
+  async getActiveMealPlanForUser(userId: number, isNutritionist: boolean = false): Promise<MealPlanWithDetails | undefined> {
+    // Si es nutricionista, obtener el plan activo sin importar si está publicado
+    // Si es cliente, obtener solo planes activos que estén publicados
+    const conditions = [
+      eq(mealPlans.userId, userId),
+      eq(mealPlans.active, true)
+    ];
+    
+    if (!isNutritionist) {
+      // Solo para clientes, verificar que el plan esté publicado
+      conditions.push(eq(mealPlans.published, true));
+    }
+    
     const [plan] = await db
       .select()
       .from(mealPlans)
-      .where(and(
-        eq(mealPlans.userId, userId),
-        eq(mealPlans.active, true)
-      ));
+      .where(and(...conditions));
     
     if (!plan) {
       return undefined;

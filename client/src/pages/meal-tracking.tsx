@@ -8,7 +8,8 @@ import {
   DailyMeals, 
   MealType,
   MealTypeValues,
-  InsertMeal
+  InsertMeal,
+  MealWithComments
 } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Plus, Edit } from "lucide-react";
 import MealForm from "@/components/forms/meal-form";
 import { capitalizeFirstLetter } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function MealTracking() {
   const { user } = useAuth();
@@ -224,25 +232,36 @@ export default function MealTracking() {
 
       {/* Meal tracking content */}
       <div className="space-y-6">
-        {/* Form for adding/editing meal */}
-        {(isAddingMeal || editingMeal !== null) && (
-          <Card className="mb-6">
-            <CardHeader>
-              <h3 className="text-lg font-semibold">
+        {/* Dialog modal for adding/editing meal */}
+        <Dialog open={isAddingMeal || editingMeal !== null} onOpenChange={(open) => {
+          if (!open) cancelForm();
+        }}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>
                 {isAddingMeal ? `Añadir ${selectedMealType}` : 'Editar comida'}
-              </h3>
-            </CardHeader>
-            <CardContent>
-              <MealForm 
-                initialData={editingMeal ? getMealById(editingMeal) : undefined}
-                mealType={selectedMealType}
-                onSubmit={isAddingMeal ? handleAddMeal : handleUpdateMeal}
-                onCancel={cancelForm}
-                isSubmitting={createMealMutation.isPending || updateMealMutation.isPending}
-              />
-            </CardContent>
-          </Card>
-        )}
+              </DialogTitle>
+              <DialogDescription>
+                {isAddingMeal 
+                  ? 'Registra los detalles de tu comida' 
+                  : 'Modifica los detalles de esta comida'}
+              </DialogDescription>
+            </DialogHeader>
+            <MealForm 
+              initialData={editingMeal ? getMealById(editingMeal) || undefined : undefined}
+              mealType={selectedMealType}
+              onSubmit={(data) => {
+                if (isAddingMeal) {
+                  handleAddMeal(data as InsertMeal);
+                } else {
+                  handleUpdateMeal(data);
+                }
+              }}
+              onCancel={cancelForm}
+              isSubmitting={createMealMutation.isPending || updateMealMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
 
         {/* Meals list */}
         {isLoading ? (
@@ -288,12 +307,20 @@ export default function MealTracking() {
                             {meal.description && (
                               <p className="text-sm text-gray-500">{meal.description}</p>
                             )}
-                            {meal.calories && (
-                              <p className="text-sm text-gray-500 mt-1">{meal.calories} kcal</p>
-                            )}
-                            {meal.time && (
-                              <p className="text-sm text-gray-500">{meal.time}</p>
-                            )}
+                            <div className="text-sm text-gray-500 mt-1 space-y-1">
+                              {meal.calories && (
+                                <p>{meal.calories} kcal</p>
+                              )}
+                              {meal.time && (
+                                <p>Hora: {meal.time}</p>
+                              )}
+                              {meal.duration && (
+                                <p>Duración: {meal.duration} minutos</p>
+                              )}
+                              {meal.waterIntake && (
+                                <p>Agua: {meal.waterIntake} litros</p>
+                              )}
+                            </div>
                           </div>
                           <div className="flex space-x-2">
                             <Button 

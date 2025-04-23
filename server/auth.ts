@@ -127,14 +127,31 @@ export function setupAuth(app: Express) {
             return done(null, false);
           }
           
-          // Verificando password
-          const passwordValid = await comparePasswords(password, user.password);
-          console.log("Validación de password:", passwordValid ? "Éxito" : "Fallida");
-          
-          if (!passwordValid) {
-            return done(null, false);
-          } else {
+          // IMPORTANTE: Comparación directa en casos de contraseñas en texto plano
+          // Esto solo es temporal para migración
+          if (user.password === password) {
+            console.log("Contraseña coincide exactamente - Login exitoso");
             return done(null, user);
+          }
+          
+          try {
+            // Para contraseñas hasheadas, usar el método seguro
+            if (user.password.includes('.')) {
+              const [hashed, salt] = user.password.split(".");
+              const hashedBuf = Buffer.from(hashed, "hex");
+              const suppliedBuf = (await scryptAsync(password, salt, 64)) as Buffer;
+              
+              if (hashedBuf.length === suppliedBuf.length && timingSafeEqual(hashedBuf, suppliedBuf)) {
+                console.log("Contraseña hasheada válida");
+                return done(null, user);
+              }
+            }
+            
+            console.log("Validación de contraseña fallida");
+            return done(null, false);
+          } catch (error) {
+            console.error("Error verificando contraseña:", error);
+            return done(null, false);
           }
         } catch (error) {
           console.error("Error en estrategia de autenticación:", error);

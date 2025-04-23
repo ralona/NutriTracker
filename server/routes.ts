@@ -34,6 +34,45 @@ const isNutritionist = (req: Request, res: Response, next: Function) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
+  
+  // Ruta especial para debug de autenticación
+  app.post("/api/debug-login", async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Se requiere email y password" });
+    }
+    
+    try {
+      console.log("DEBUG - Buscando usuario:", email);
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        console.log("DEBUG - Usuario no encontrado");
+        return res.status(401).json({ error: "Credenciales inválidas" });
+      }
+      
+      console.log("DEBUG - Usuario encontrado:", user.id, user.email, user.active);
+      console.log("DEBUG - Password almacenada:", user.password);
+      
+      // IMPORTANTE: Solo para depuración, nunca en producción!
+      if (user.password === password) {
+        console.log("DEBUG - Contraseña coincide exactamente (texto plano)");
+        req.login(user, (err) => {
+          if (err) {
+            console.error("DEBUG - Error en req.login:", err);
+            return res.status(500).json({ error: "Error de autenticación" });
+          }
+          return res.status(200).json(user);
+        });
+      } else {
+        console.log("DEBUG - Contraseña no coincide exactamente");
+        return res.status(401).json({ error: "Credenciales inválidas" });
+      }
+    } catch (error) {
+      console.error("DEBUG - Error:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
 
   // MEAL MANAGEMENT
   // Get meals for a specific date

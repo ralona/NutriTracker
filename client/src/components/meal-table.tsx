@@ -120,22 +120,37 @@ export default function MealTable({
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
-                const meal = getMeal(dayStr, MealType.MORNING_SNACK);
+                const mealsList = getMeals(dayStr, MealType.MORNING_SNACK);
                 
                 return (
                   <td key={`${dayStr}-morning-snack`} className="px-4 py-3">
-                    {meal ? (
-                      <div 
-                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
-                        onClick={() => onEditMeal(meal)}
-                      >
-                        <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
-                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                    {mealsList.length > 0 ? (
+                      <div className="space-y-2">
+                        {mealsList.map((meal, index) => (
+                          <div 
+                            key={meal.id || index}
+                            className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
+                            onClick={() => onEditMeal(meal)}
+                          >
+                            <div className="font-medium">{meal.name}</div>
+                            {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-1 flex items-center">
+                                <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                                <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                              </div>
+                            )}
                           </div>
+                        ))}
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                            onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
+                          >
+                            + Añadir otro
+                          </Button>
                         )}
                       </div>
                     ) : (
@@ -166,28 +181,43 @@ export default function MealTable({
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
-                const meal = getMeal(dayStr, MealType.LUNCH);
+                const mealsList = getMeals(dayStr, MealType.LUNCH);
                 
                 return (
                   <td key={`${dayStr}-lunch`} className="px-4 py-3">
-                    {meal ? (
-                      <div 
-                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
-                        onClick={() => onEditMeal(meal)}
-                      >
-                        <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 flex items-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary">
-                              Comentario del nutricionista
-                            </span>
+                    {mealsList.length > 0 ? (
+                      <div className="space-y-2">
+                        {mealsList.map((meal, index) => (
+                          <div 
+                            key={meal.id || index}
+                            className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
+                            onClick={() => onEditMeal(meal)}
+                          >
+                            <div className="font-medium">{meal.name}</div>
+                            {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-1 flex items-center">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary">
+                                  Comentario del nutricionista
+                                </span>
+                              </div>
+                            )}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-1 text-xs italic text-muted-foreground bg-muted/50 p-1 rounded">
+                                {meal.comments[0].content}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 text-xs italic text-muted-foreground bg-muted/50 p-1 rounded">
-                            {meal.comments[0].content}
-                          </div>
+                        ))}
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                            onClick={() => onAddMeal(dayStr, MealType.LUNCH)}
+                          >
+                            + Añadir otro
+                          </Button>
                         )}
                       </div>
                     ) : (
@@ -218,22 +248,37 @@ export default function MealTable({
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
-                const meal = getMeal(dayStr, MealType.AFTERNOON_SNACK);
+                const mealsList = getMeals(dayStr, MealType.AFTERNOON_SNACK);
                 
                 return (
                   <td key={`${dayStr}-afternoon-snack`} className="px-4 py-3">
-                    {meal ? (
-                      <div 
-                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
-                        onClick={() => onEditMeal(meal)}
-                      >
-                        <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
-                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                    {mealsList.length > 0 ? (
+                      <div className="space-y-2">
+                        {mealsList.map((meal, index) => (
+                          <div 
+                            key={meal.id || index}
+                            className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
+                            onClick={() => onEditMeal(meal)}
+                          >
+                            <div className="font-medium">{meal.name}</div>
+                            {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-1 flex items-center">
+                                <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                                <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                              </div>
+                            )}
                           </div>
+                        ))}
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                            onClick={() => onAddMeal(dayStr, MealType.AFTERNOON_SNACK)}
+                          >
+                            + Añadir otro
+                          </Button>
                         )}
                       </div>
                     ) : (
@@ -264,22 +309,37 @@ export default function MealTable({
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
-                const meal = getMeal(dayStr, MealType.DINNER);
+                const mealsList = getMeals(dayStr, MealType.DINNER);
                 
                 return (
                   <td key={`${dayStr}-dinner`} className="px-4 py-3">
-                    {meal ? (
-                      <div 
-                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
-                        onClick={() => onEditMeal(meal)}
-                      >
-                        <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
-                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                    {mealsList.length > 0 ? (
+                      <div className="space-y-2">
+                        {mealsList.map((meal, index) => (
+                          <div 
+                            key={meal.id || index}
+                            className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
+                            onClick={() => onEditMeal(meal)}
+                          >
+                            <div className="font-medium">{meal.name}</div>
+                            {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-1 flex items-center">
+                                <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                                <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                              </div>
+                            )}
                           </div>
+                        ))}
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                            onClick={() => onAddMeal(dayStr, MealType.DINNER)}
+                          >
+                            + Añadir otro
+                          </Button>
                         )}
                       </div>
                     ) : (

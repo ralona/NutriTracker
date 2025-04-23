@@ -42,9 +42,15 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
-    // Si no hay password almacenado o no tiene el formato esperado, retornar false
-    if (!stored || !stored.includes('.')) {
-      console.log("Password almacenado con formato incorrecto o vacío");
+    // Si no hay password almacenado o suministrado, retornar false
+    if (!stored || !supplied) {
+      console.log("Password almacenado o suministrado está vacío");
+      return false;
+    }
+    
+    // Verificar formato del hash almacenado
+    if (!stored.includes('.')) {
+      console.log("Password almacenado con formato incorrecto: no contiene separador '.'");
       return false;
     }
     
@@ -56,7 +62,10 @@ async function comparePasswords(supplied: string, stored: string) {
       return false;
     }
     
+    // Convertir el hash almacenado a buffer
     const hashedBuf = Buffer.from(hashed, "hex");
+    
+    // Generar hash del password suministrado con la misma sal
     const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
     
     // Verificar que los buffers tienen el mismo tamaño
@@ -65,7 +74,13 @@ async function comparePasswords(supplied: string, stored: string) {
       return false;
     }
     
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    // Usar timingSafeEqual para evitar ataques de temporización
+    const result = timingSafeEqual(hashedBuf, suppliedBuf);
+    
+    // Guardar resultado para debug
+    console.log(`Resultado de comparación de passwords: ${result ? 'Éxito' : 'Fallo'}`);
+    
+    return result;
   } catch (error) {
     console.error("Error al comparar passwords:", error);
     return false;
@@ -113,8 +128,9 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByEmail(req.body.email);
-    if (existingUser) {
+    // Buscar usuario incluyendo inactivos para evitar duplicados
+    const existingUser = await storage.getUserByEmail(req.body.email, true);
+    if (existingUser && existingUser.active) {
       return res.status(400).send("El email ya está registrado");
     }
 
@@ -151,8 +167,9 @@ export function setupAuth(app: Express) {
   
   // Ruta para registro como nutricionista
   app.post("/api/register/nutritionist", async (req, res, next) => {
-    const existingUser = await storage.getUserByEmail(req.body.email);
-    if (existingUser) {
+    // Buscar usuario incluyendo inactivos para evitar duplicados
+    const existingUser = await storage.getUserByEmail(req.body.email, true);
+    if (existingUser && existingUser.active) {
       return res.status(400).send("El email ya está registrado");
     }
 
@@ -186,9 +203,17 @@ export function setupAuth(app: Express) {
       return res.status(400).send("Se requiere email y nombre del paciente");
     }
     
-    const existingUser = await storage.getUserByEmail(email);
-    if (existingUser) {
-      return res.status(400).send("Este email ya está registrado en el sistema");
+    // Buscar usuario existente incluyendo inactivos para evitar duplicados
+    const existingUser = await storage.getUserByEmail(email, true);
+    if (existingUser && existingUser.active) {
+      return res.status(400).send("Este email ya está registrado como usuario activo en el sistema");
+    }
+    
+    // Si existe un usuario inactivo con este email que no ha sido confirmado, podemos reenviar la invitación
+    // Esto permite invitar a usuarios que fueron eliminados
+    if (existingUser && !existingUser.active) {
+      console.log("Actualizando invitación existente para usuario inactivo:", email);
+      // Se manejará abajo en el bloque try-catch
     }
     
     try {

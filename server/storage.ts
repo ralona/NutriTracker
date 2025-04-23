@@ -94,18 +94,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const results = await db.select().from(users).where(eq(users.id, id));
+    return results.length > 0 ? results[0] : undefined;
   }
   
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
-    return user;
+  async getUserByEmail(email: string, includeInactive = false): Promise<User | undefined> {
+    let selectQuery = db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    
+    // Si no se incluyen inactivos, solo buscar activos
+    if (!includeInactive) {
+      selectQuery = db.select().from(users).where(
+        and(
+          eq(users.email, email.toLowerCase()),
+          eq(users.active, true)
+        )
+      );
+    }
+    
+    const results = await selectQuery;
+    return results.length > 0 ? results[0] : undefined;
   }
   
   async getUserByInviteToken(token: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.inviteToken, token));
-    return user;
+    const results = await db.select().from(users).where(eq(users.inviteToken, token));
+    return results.length > 0 ? results[0] : undefined;
   }
   
   async createUser(insertUser: InsertUser): Promise<User> {

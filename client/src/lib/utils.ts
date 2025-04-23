@@ -61,14 +61,14 @@ export function getStatusBadgeClass(status: string): string {
   switch (status) {
     case 'Bien':
     case 'Activo':
-      return 'bg-green-100 text-green-800';
+      return 'variant-success';
     case 'Regular':
     case 'Pendiente':
-      return 'bg-amber-100 text-amber-800';
+      return 'variant-warning';
     case 'Insuficiente':
     case 'Atención':
-      return 'bg-red-100 text-red-800';
+      return 'variant-danger';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return '';
   }
 }

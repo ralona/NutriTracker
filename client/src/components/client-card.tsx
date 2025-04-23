@@ -1,9 +1,11 @@
 import { ClientWithSummary } from "@shared/schema";
-import { getStatusBadgeClass, getProgressLabel } from "@/lib/utils";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { ChevronRight } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ExternalLink, Calendar, MessageSquare, Activity } from "lucide-react";
+import { getProgressLabel, getStatusBadgeClass } from "@/lib/utils";
+import { format } from "date-fns";
+import { Progress } from "@/components/ui/progress";
 
 interface ClientCardProps {
   client: ClientWithSummary;
@@ -11,77 +13,71 @@ interface ClientCardProps {
 }
 
 export default function ClientCard({ client, onClick }: ClientCardProps) {
-  // Get the status badge class
-  const badgeClass = getStatusBadgeClass(client.lastWeekStatus);
-  
-  // Format the last meal date if it exists
-  const lastMealDate = client.latestMeal 
-    ? format(new Date(client.latestMeal.date), "d 'de' MMMM", { locale: es })
-    : "Sin registros";
-  
-  // Determine activity status
-  const isActive = client.latestMeal && new Date(client.latestMeal.date).getTime() > Date.now() - 3 * 24 * 60 * 60 * 1000;
-  const activityStatus = isActive ? "Activo" : "Inactivo";
-  const activityBadgeClass = isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800";
-  
+  const hasRecentActivity = client.latestMeal && 
+    (new Date().getTime() - new Date(client.latestMeal.date).getTime()) < 7 * 24 * 60 * 60 * 1000;
+
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
-              {client.name.slice(0, 2).toUpperCase()}
-            </div>
-            <div className="ml-3">
-              <h4 className="text-sm font-medium text-gray-900">{client.name}</h4>
-              <p className="text-xs text-gray-500">Último registro: {lastMealDate}</p>
-            </div>
+    <Card className="overflow-hidden transition-all hover:shadow-md">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-semibold">{client.name}</CardTitle>
+        <p className="text-sm text-muted-foreground">{client.email}</p>
+      </CardHeader>
+      <CardContent className="pb-2 space-y-4">
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm">Progreso</span>
+            <Badge variant={getStatusBadgeClass(client.lastWeekStatus) as any}>
+              {getProgressLabel(client.progress)}
+            </Badge>
           </div>
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activityBadgeClass}`}>
-            {activityStatus}
-          </span>
+          <Progress value={client.progress} className="h-2" />
         </div>
         
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Progreso del plan</span>
-            <span className="text-gray-900 font-medium">{client.progress}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-            <div 
-              className={`h-2 rounded-full ${
-                client.progress >= 70 ? 'bg-green-500' : 
-                client.progress >= 40 ? 'bg-amber-500' : 
-                'bg-red-500'
-              }`} 
-              style={{ width: `${client.progress}%` }}
-            ></div>
-          </div>
-        </div>
-        
-        <div className="mt-4 text-sm text-gray-500">
-          <div className="flex items-center justify-between">
-            <span>Última semana:</span>
-            <span className={`font-medium ${
-              client.lastWeekStatus === 'Bien' ? 'text-green-600' : 
-              client.lastWeekStatus === 'Regular' ? 'text-amber-600' : 
-              'text-red-600'
-            }`}>
-              {client.lastWeekStatus}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">
+              {client.latestMeal 
+                ? format(new Date(client.latestMeal.date), 'dd/MM/yy')
+                : 'Sin actividad'}
             </span>
           </div>
-          <div className="flex items-center justify-between mt-1">
-            <span>Comentarios pendientes:</span>
-            <span className="font-medium text-amber-600">{client.pendingComments}</span>
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">
+              {client.pendingComments > 0 
+                ? `${client.pendingComments} comentarios` 
+                : 'Sin comentarios'}
+            </span>
           </div>
         </div>
-      </div>
-      <div className="bg-gray-50 px-4 py-3">
-        <Button variant="link" className="w-full justify-between p-0 text-sm text-primary-600 font-medium hover:text-primary-700">
-          <span>Ver planes alimenticios</span>
-          <ChevronRight className="h-4 w-4 ml-1" />
+
+        {client.activePlan && (
+          <div className="border rounded p-2 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Plan activo</span>
+              <Badge variant="outline" className="text-xs">
+                Semana {format(new Date(client.activePlan.weekStart), 'dd/MM')}
+              </Badge>
+            </div>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="pt-2">
+        <Button variant="outline" className="w-full" onClick={onClick}>
+          <ExternalLink className="mr-2 h-4 w-4" />
+          <span>Ver detalles</span>
         </Button>
-      </div>
-    </div>
+      </CardFooter>
+      
+      {hasRecentActivity && (
+        <div className="absolute top-3 right-3">
+          <div className="relative">
+            <Activity className="h-5 w-5 text-green-500" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }

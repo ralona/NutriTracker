@@ -97,6 +97,7 @@ export const mealPlans = pgTable("meal_plans", {
   nutritionistId: integer("nutritionist_id").notNull(),
   weekStart: timestamp("week_start").notNull(),
   weekEnd: timestamp("week_end").notNull(),
+  description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   active: boolean("active").notNull().default(true),
 });
@@ -106,27 +107,26 @@ export const insertMealPlanSchema = createInsertSchema(mealPlans).pick({
   nutritionistId: true,
   weekStart: true,
   weekEnd: true,
+  description: true,
   active: true,
-}).omit({ createdAt: true });
+});
 
 // Detalles del plan de comidas
 export const mealPlanDetails = pgTable("meal_plan_details", {
   id: serial("id").primaryKey(),
   mealPlanId: integer("meal_plan_id").notNull(),
   day: timestamp("day").notNull(),
-  type: text("type").notNull(),
-  suggestion: text("suggestion").notNull(),
-  calories: integer("calories").default(null),
-  notes: text("notes").default(null),
+  mealType: text("meal_type").notNull(),
+  description: text("description").notNull(),
+  image: text("image"),
 });
 
 export const insertMealPlanDetailSchema = createInsertSchema(mealPlanDetails).pick({
   mealPlanId: true,
   day: true, 
-  type: true,
-  suggestion: true,
-  calories: true,
-  notes: true,
+  mealType: true,
+  description: true,
+  image: true,
 });
 
 // Modelo de resumen nutricional

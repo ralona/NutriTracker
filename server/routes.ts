@@ -2,10 +2,13 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
+import { createInvitation, verifyInvitationToken, activateInvitation } from "./invite";
 import { 
   insertMealSchema, 
   insertCommentSchema, 
   insertNutritionSummarySchema,
+  insertMealPlanSchema,
+  insertMealPlanDetailSchema,
   MealType,
   DailyMeals
 } from "@shared/schema";
@@ -351,6 +354,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(client);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // INVITACIONES
+  // Crear una invitación para un nuevo paciente
+  app.post("/api/invitations", isNutritionist, async (req, res) => {
+    try {
+      const { name, email } = req.body;
+      
+      if (!name || !email) {
+        return res.status(400).json({ message: "Nombre y email son requeridos" });
+      }
+      
+      // Verificar si el email ya está en uso
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Este email ya está registrado" });
+      }
+      
+      const invitation = await createInvitation(name, email, req.user!.id);
+      
+      res.status(201).json({
+        message: "Invitación creada con éxito",
+        inviteLink: invitation.inviteLink
+      });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Verificar token de invitación
+  app.get("/api/invitations/verify", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token de invitación requerido" });
+      }
+      
+      const user = await verifyInvitationToken(token);
+      
+      if (!user) {
+        return res.status(404).json({ 
+          valid: false,
+          message: "Invitación inválida o expirada" 
+        });
+      }
+      
+      res.json({
+        valid: true,
+        user: {
+          name: user.name,
+          email: user.email
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Activar cuenta con token de invitación
+  app.post("/api/invitations/activate", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token y contraseña son requeridos" });
+      }
+      
+      const user = await activateInvitation(token, password);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Invitación inválida o expirada" });
+      }
+      
+      // Iniciar sesión automáticamente
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: err.message });
+        }
+        res.json({ message: "Cuenta activada con éxito", user });
+      });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // PLANES DE COMIDA
+  // Crear un nuevo plan de comidas
+  app.post("/api/meal-plans", isNutritionist, async (req, res) => {
+    try {
+      const { userId, weekStart, weekEnd, description } = req.body;
+      
+      // Verificar que el usuario existe y es cliente del nutricionista
+      const client = await storage.getUser(userId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      if (client.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No autorizado a crear planes para este cliente" });
+      }
+      
+      const mealPlanData = insertMealPlanSchema.parse({
+        nutritionistId: req.user!.id,
+        userId,
+        weekStart,
+        weekEnd,
+        description,
+        active: true,
+        createdAt: new Date()
+      });
+      
+      const mealPlan = await storage.createMealPlan(mealPlanData);
+      
+      res.status(201).json(mealPlan);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Añadir detalles a un plan de comidas
+  app.post("/api/meal-plans/:id/details", isNutritionist, async (req, res) => {
+    try {
+      const mealPlanId = Number(req.params.id);
+      const { day, mealType, description, image } = req.body;
+      
+      // Verificar que el plan existe y pertenece al nutricionista
+      const mealPlan = await storage.getMealPlanById(mealPlanId);
+      
+      if (!mealPlan) {
+        return res.status(404).json({ message: "Plan de comidas no encontrado" });
+      }
+      
+      if (mealPlan.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No autorizado a modificar este plan" });
+      }
+      
+      const detailData = insertMealPlanDetailSchema.parse({
+        mealPlanId,
+        day,
+        mealType,
+        description,
+        image
+      });
+      
+      const detail = await storage.addMealPlanDetail(detailData);
+      
+      res.status(201).json(detail);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Obtener plan de comidas activo para un usuario
+  app.get("/api/meal-plans/active", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const mealPlan = await storage.getActiveMealPlanForUser(userId);
+      
+      if (!mealPlan) {
+        return res.status(404).json({ message: "No hay un plan de comidas activo" });
+      }
+      
+      res.json(mealPlan);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Obtener plan de comidas por ID
+  app.get("/api/meal-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      const mealPlanId = Number(req.params.id);
+      const mealPlan = await storage.getMealPlanWithDetails(mealPlanId);
+      
+      if (!mealPlan) {
+        return res.status(404).json({ message: "Plan de comidas no encontrado" });
+      }
+      
+      // Verificar acceso: debe ser el nutricionista que creó el plan o el usuario para quien se creó
+      if (mealPlan.nutritionistId !== req.user!.id && mealPlan.userId !== req.user!.id) {
+        return res.status(403).json({ message: "No autorizado a ver este plan" });
+      }
+      
+      res.json(mealPlan);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Desactivar plan de comidas
+  app.post("/api/meal-plans/:id/deactivate", isNutritionist, async (req, res) => {
+    try {
+      const mealPlanId = Number(req.params.id);
+      const mealPlan = await storage.getMealPlanById(mealPlanId);
+      
+      if (!mealPlan) {
+        return res.status(404).json({ message: "Plan de comidas no encontrado" });
+      }
+      
+      if (mealPlan.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No autorizado a modificar este plan" });
+      }
+      
+      await storage.deactivateMealPlan(mealPlanId);
+      
+      res.json({ message: "Plan de comidas desactivado con éxito" });
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
     }

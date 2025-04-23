@@ -262,63 +262,63 @@ export default function AuthPage() {
         </div>
         
         {/* Hero side */}
-        <div className="hidden lg:flex flex-col justify-center p-8 bg-primary-50 rounded-lg">
+        <div className="hidden lg:flex flex-col justify-center p-8 bg-card border border-border rounded-lg">
           <div>
-            <h1 className="text-3xl font-bold text-primary-800 mb-4">
+            <h1 className="text-3xl font-bold text-primary mb-4">
               NutriTrack
             </h1>
-            <p className="text-lg text-primary-700 mb-6">
+            <p className="text-lg text-foreground mb-6">
               Registra tu alimentación diaria y recibe seguimiento profesional de tu nutricionista
             </p>
             <div className="space-y-4">
               <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary-200 rounded-full flex items-center justify-center mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-primary-700">Seguimiento de comidas diarias por tipo de comida</p>
+                <p className="text-muted-foreground">Seguimiento de comidas diarias por tipo de comida</p>
               </div>
               <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary-200 rounded-full flex items-center justify-center mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-primary-700">Vista semanal de tu plan de alimentación</p>
+                <p className="text-muted-foreground">Vista semanal de tu plan de alimentación</p>
               </div>
               <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary-200 rounded-full flex items-center justify-center mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-primary-700">Comentarios de profesionales en nutrición para mejorar tus hábitos</p>
+                <p className="text-muted-foreground">Comentarios de profesionales en nutrición para mejorar tus hábitos</p>
               </div>
               <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary-200 rounded-full flex items-center justify-center mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-primary-700">Seguimiento de calorías y nutrientes</p>
+                <p className="text-muted-foreground">Seguimiento de calorías y nutrientes</p>
               </div>
             </div>
           </div>
           <div className="mt-10">
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <p className="text-gray-700 italic">
+            <div className="bg-background border border-border p-4 rounded-lg shadow-sm">
+              <p className="text-foreground italic">
                 "NutriTrack ha transformado mi relación con la comida. El seguimiento diario y los comentarios de mi nutricionista han sido clave para lograr mis objetivos de salud."
               </p>
               <div className="mt-3 flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold">
+                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
                     MG
                   </div>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">María García</p>
-                  <p className="text-xs text-gray-500">Cliente desde 2023</p>
+                  <p className="text-sm font-medium text-foreground">María García</p>
+                  <p className="text-xs text-muted-foreground">Cliente desde 2023</p>
                 </div>
               </div>
             </div>

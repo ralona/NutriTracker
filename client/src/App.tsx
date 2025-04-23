@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import { ThemeProvider } from "next-themes";
 
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -30,17 +31,19 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Header />
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <Router />
-            </main>
-            <Toaster />
-          </div>
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <AuthProvider>
+          <TooltipProvider>
+            <div className="min-h-screen bg-background text-foreground">
+              <Header />
+              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Router />
+              </main>
+              <Toaster />
+            </div>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

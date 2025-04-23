@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +11,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, User as UserIcon, Settings, Menu } from "lucide-react";
+import { Loader2, LogOut, User as UserIcon, Settings, Sun, Moon, Utensils } from "lucide-react";
 
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
   const [location] = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Monta el componente del lado del cliente para evitar error de hidratación
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -30,15 +37,21 @@ export default function Header() {
       .substring(0, 2);
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  if (!mounted) return null;
+
   return (
-    <header className="bg-white shadow-sm">
+    <header className="bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" />
-          </svg>
-          <Link href="/">
-            <span className="text-xl font-semibold text-gray-800 cursor-pointer">NutriTrack</span>
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="bg-primary rounded-full p-1.5">
+              <Utensils className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-semibold text-foreground">NutriTrack</span>
           </Link>
         </div>
         
@@ -48,12 +61,12 @@ export default function Header() {
               {user.role === "client" && (
                 <>
                   <Link href="/meals/weekly">
-                    <span className={`text-sm font-medium ${location === "/meals/weekly" ? "text-primary-600" : "text-gray-600 hover:text-primary-600"} transition-colors cursor-pointer`}>
+                    <span className={`text-sm font-medium ${location === "/meals/weekly" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
                       Plan Semanal
                     </span>
                   </Link>
                   <Link href="/meals/daily">
-                    <span className={`text-sm font-medium ${location === "/meals/daily" ? "text-primary-600" : "text-gray-600 hover:text-primary-600"} transition-colors cursor-pointer`}>
+                    <span className={`text-sm font-medium ${location === "/meals/daily" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
                       Comidas Diarias
                     </span>
                   </Link>
@@ -62,7 +75,7 @@ export default function Header() {
               
               {user.role === "nutritionist" && (
                 <Link href="/nutritionist">
-                  <span className={`text-sm font-medium ${location === "/nutritionist" ? "text-primary-600" : "text-gray-600 hover:text-primary-600"} transition-colors cursor-pointer`}>
+                  <span className={`text-sm font-medium ${location === "/nutritionist" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
                     Panel de Nutricionista
                   </span>
                 </Link>
@@ -72,14 +85,28 @@ export default function Header() {
         </div>
         
         <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            className="rounded-full"
+            aria-label="Cambiar tema"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+          
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           ) : user ? (
             <>
               <div className="hidden md:flex items-center space-x-2">
-                <span className="text-sm text-gray-600">{user.name}</span>
+                <span className="text-sm text-muted-foreground">{user.name}</span>
                 {user.role === "nutritionist" && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-800">
+                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
                     Nutricionista
                   </span>
                 )}
@@ -87,7 +114,7 @@ export default function Header() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary-500 text-white font-semibold">
+                  <button className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold">
                     {getInitials(user.name)}
                   </button>
                 </DropdownMenuTrigger>

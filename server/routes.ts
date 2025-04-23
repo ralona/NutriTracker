@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { createInvitation, verifyInvitationToken, activateInvitation } from "./invite";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { 
   insertMealSchema, 
   insertCommentSchema, 
@@ -80,7 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/hash-passwords", async (req, res) => {
     try {
       // Obtener usuarios con contraseñas sin hashear (aquellas que no contienen un punto)
-      const { rows } = await db.execute(
+      // Usando pool directamente para ejecutar SQL plano
+      const { rows } = await pool.query(
         "SELECT * FROM users WHERE position('.' in password) = 0"
       );
       

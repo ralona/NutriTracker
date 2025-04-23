@@ -107,10 +107,11 @@ export default function WeeklyView() {
       {/* Header with date navigation */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plan Semanal</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Plan Semanal Recomendado</h1>
           {user?.role === "client" && (
             <p className="text-sm text-gray-500 mt-1">
-              Aquí verás exclusivamente el plan de alimentación recomendado por tu nutricionista
+              <strong>Nota:</strong> Esta sección es solamente informativa y muestra el plan alimenticio 
+              sugerido por tu nutricionista. Para registrar tus comidas, utiliza la sección "Comidas Diarias".
             </p>
           )}
         </div>
@@ -225,8 +226,12 @@ export default function WeeklyView() {
                 </div>
                 <h3 className="text-lg font-medium mb-2">Plan pendiente</h3>
                 <p className="text-gray-500 max-w-md">
-                  Tu nutricionista aún no ha publicado un plan de comidas para ti. 
-                  Una vez que lo haga, aparecerá aquí con las recomendaciones personalizadas.
+                  Tu nutricionista todavía no ha publicado un plan de comidas recomendado para ti.
+                  Esta sección es puramente informativa y mostrará las sugerencias de comidas
+                  una vez que tu nutricionista las haya preparado.
+                </p>
+                <p className="text-blue-600 text-sm mt-2">
+                  Recuerda que puedes registrar tus comidas diarias en la sección "Comidas Diarias".
                 </p>
               </div>
             </CardContent>
@@ -243,8 +248,9 @@ export default function WeeklyView() {
             </div>
             <h3 className="text-lg font-medium mb-2">Plan Nutricional</h3>
             <p className="text-gray-500 max-w-md mb-4">
-              Esta sección muestra exclusivamente el plan nutricional preparado por tu nutricionista.
-              Para registrar o ver tus propias comidas, utiliza la sección "Comidas Diarias".
+              Esta sección es <strong>únicamente informativa</strong> y muestra exclusivamente el plan nutricional 
+              preparado por tu nutricionista. Para registrar y consultar tus propias comidas, 
+              debes utilizar la sección "Comidas Diarias".
             </p>
             <Button 
               onClick={() => window.location.href = '/?view=daily'}

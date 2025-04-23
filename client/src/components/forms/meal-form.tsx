@@ -26,10 +26,13 @@ import { Loader2, ChevronDown } from "lucide-react";
 
 // Schema for the form
 const mealFormSchema = z.object({
+  // Solo validamos que el tipo está incluido en los valores permitidos
   type: z.string().refine(val => Object.values(MealType).includes(val as MealTypeValues), {
     message: "Tipo de comida no válido"
   }),
-  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  // Solo validamos que el nombre no está vacío
+  name: z.string().min(1, "El nombre de la comida es obligatorio"),
+  // Los demás campos son opcionales
   description: z.string().optional().nullable(),
   calories: z.coerce.number().min(0, "Las calorías no pueden ser negativas").optional().nullable(),
   time: z.string().optional().nullable(),
@@ -83,6 +86,16 @@ export default function MealForm({
 
   // Submit handler
   const handleSubmit = (values: MealFormValues) => {
+    // Asegurarse de que el nombre no esté vacío (validación adicional)
+    if (!values.name?.trim()) {
+      form.setError("name", {
+        type: "manual",
+        message: "El nombre de la comida es obligatorio"
+      });
+      return;
+    }
+    
+    // Todo está bien, enviamos el formulario
     onSubmit(values);
   };
 

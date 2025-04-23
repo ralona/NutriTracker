@@ -60,17 +60,20 @@ export const meals = pgTable("meals", {
   notes: text("notes").default(null),
 });
 
-export const insertMealSchema = createInsertSchema(meals).pick({
-  userId: true,
-  date: true,
-  type: true,
-  name: true,
-  description: true,
-  calories: true,
-  time: true,
-  duration: true,
-  waterIntake: true,
-  notes: true,
+// Creamos un esquema personalizado para manejar correctamente las fechas como string
+export const insertMealSchema = z.object({
+  userId: z.number(),
+  date: z.string().or(z.date()).transform(val => 
+    typeof val === 'string' ? new Date(val) : val
+  ),
+  type: z.string(),
+  name: z.string().min(1, "El nombre de la comida es obligatorio"),
+  description: z.string().optional().nullable(),
+  calories: z.number().optional().nullable(),
+  time: z.string().optional().nullable(),
+  duration: z.number().optional().nullable(),
+  waterIntake: z.number().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 // Comentarios del nutricionista

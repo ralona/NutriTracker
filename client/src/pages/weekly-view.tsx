@@ -81,8 +81,26 @@ export default function WeeklyView() {
   // Create meal mutation
   const createMealMutation = useMutation({
     mutationFn: async (mealData: InsertMeal) => {
-      const res = await apiRequest("POST", "/api/meals", mealData);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/meals", mealData);
+        const data = await res.json();
+        
+        if (!res.ok) {
+          if (data.errors) {
+            // Si hay errores de validación, los convertimos a un mensaje amigable
+            const errorMessages = data.errors.map((err: any) => {
+              const field = err.path?.[0] || "campo";
+              return `${field}: ${err.message}`;
+            }).join(", ");
+            throw new Error(`Errores en el formulario: ${errorMessages}`);
+          }
+          throw new Error(data.message || "Error al registrar la comida");
+        }
+        
+        return data;
+      } catch (error) {
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/meals/weekly"] });
@@ -96,7 +114,7 @@ export default function WeeklyView() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Error al registrar comida",
         description: (error as Error).message || "No se pudo registrar la comida",
         variant: "destructive"
       });
@@ -106,8 +124,26 @@ export default function WeeklyView() {
   // Update meal mutation
   const updateMealMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertMeal> }) => {
-      const res = await apiRequest("PATCH", `/api/meals/${id}`, data);
-      return await res.json();
+      try {
+        const res = await apiRequest("PATCH", `/api/meals/${id}`, data);
+        const responseData = await res.json();
+        
+        if (!res.ok) {
+          if (responseData.errors) {
+            // Si hay errores de validación, los convertimos a un mensaje amigable
+            const errorMessages = responseData.errors.map((err: any) => {
+              const field = err.path?.[0] || "campo";
+              return `${field}: ${err.message}`;
+            }).join(", ");
+            throw new Error(`Errores en el formulario: ${errorMessages}`);
+          }
+          throw new Error(responseData.message || "Error al actualizar la comida");
+        }
+        
+        return responseData;
+      } catch (error) {
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/meals/weekly"] });
@@ -120,7 +156,7 @@ export default function WeeklyView() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Error al actualizar comida",
         description: (error as Error).message || "No se pudo actualizar la comida",
         variant: "destructive"
       });

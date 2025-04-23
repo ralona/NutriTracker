@@ -128,12 +128,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       const dailyMeals: DailyMeals = {};
+      
+      // Agrupar comidas por tipo
       for (const meal of meals) {
         const mealComments = await storage.getCommentsByMealId(meal.id);
-        dailyMeals[meal.type as keyof typeof dailyMeals] = {
+        const mealWithComments = {
           ...meal,
           comments: mealComments
         };
+        
+        // Si ya existe un array para este tipo, añadimos la comida
+        if (dailyMeals[meal.type as keyof typeof dailyMeals]) {
+          dailyMeals[meal.type as keyof typeof dailyMeals]!.push(mealWithComments);
+        } else {
+          // Si no existe, creamos un nuevo array con esta comida
+          dailyMeals[meal.type as keyof typeof dailyMeals] = [mealWithComments];
+        }
       }
       
       res.json(dailyMeals);
@@ -167,15 +177,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const meal of meals) {
         const dayKey = format(meal.date, 'yyyy-MM-dd');
         const mealComments = await storage.getCommentsByMealId(meal.id);
+        const mealWithComments = {
+          ...meal,
+          comments: mealComments
+        };
         
         if (!weeklyMeals[dayKey]) {
           weeklyMeals[dayKey] = {};
         }
         
-        weeklyMeals[dayKey][meal.type as keyof DailyMeals] = {
-          ...meal,
-          comments: mealComments
-        };
+        // Si ya existe un array para este tipo, añadimos la comida
+        if (weeklyMeals[dayKey][meal.type as keyof DailyMeals]) {
+          weeklyMeals[dayKey][meal.type as keyof DailyMeals]!.push(mealWithComments);
+        } else {
+          // Si no existe, creamos un nuevo array con esta comida
+          weeklyMeals[dayKey][meal.type as keyof DailyMeals] = [mealWithComments];
+        }
       }
       
       // Get nutrition summaries for the week

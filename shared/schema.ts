@@ -176,7 +176,7 @@ export type MealWithComments = Meal & {
 };
 
 export type DailyMeals = {
-  [key in MealTypeValues]?: MealWithComments;
+  [key in MealTypeValues]?: MealWithComments[];
 };
 
 export type WeeklyMeals = {

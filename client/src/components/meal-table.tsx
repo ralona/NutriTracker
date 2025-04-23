@@ -22,9 +22,9 @@ export default function MealTable({
   onEditMeal,
   isNutritionist = false
 }: MealTableProps) {
-  // Get meal for a specific day and type
-  const getMeal = (day: string, mealType: MealTypeValues): MealWithComments | undefined => {
-    return meals[day]?.[mealType];
+  // Get meals for a specific day and type
+  const getMeals = (day: string, mealType: MealTypeValues): MealWithComments[] => {
+    return meals[day]?.[mealType] || [];
   };
 
   // Get calorie summary for a day
@@ -59,22 +59,37 @@ export default function MealTable({
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
-                const meal = getMeal(dayStr, MealType.BREAKFAST);
+                const mealsList = getMeals(dayStr, MealType.BREAKFAST);
                 
                 return (
                   <td key={`${dayStr}-breakfast`} className="px-4 py-3">
-                    {meal ? (
-                      <div 
-                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
-                        onClick={() => onEditMeal(meal)}
-                      >
-                        <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
-                        {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
-                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                    {mealsList.length > 0 ? (
+                      <div className="space-y-2">
+                        {mealsList.map((meal, index) => (
+                          <div 
+                            key={meal.id || index}
+                            className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
+                            onClick={() => onEditMeal(meal)}
+                          >
+                            <div className="font-medium">{meal.name}</div>
+                            {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
+                            {meal.comments && meal.comments.length > 0 && (
+                              <div className="mt-1 flex items-center">
+                                <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                                <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
+                              </div>
+                            )}
                           </div>
+                        ))}
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                            onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
+                          >
+                            + Añadir otro
+                          </Button>
                         )}
                       </div>
                     ) : (

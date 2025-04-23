@@ -285,7 +285,12 @@ export default function MealPlanManagement() {
     <div className="space-y-6">
       {/* Header with title and create button */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gestión de Planes de Comidas</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Gestión de Planes de Comidas</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Crea planes de alimentación personalizados para tus pacientes. Los planes se mostrarán en su perfil una vez que los publiques.
+          </p>
+        </div>
         <Button onClick={() => setIsCreatingPlan(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Crear Plan
@@ -466,7 +471,7 @@ export default function MealPlanManagement() {
                     <div className="space-y-0.5">
                       <FormLabel>Publicar ahora</FormLabel>
                       <FormDescription>
-                        El cliente podrá ver este plan inmediatamente
+                        Si lo publicas, el cliente podrá ver este plan inmediatamente en su pestaña "Plan Semanal"
                       </FormDescription>
                     </div>
                     <FormControl>

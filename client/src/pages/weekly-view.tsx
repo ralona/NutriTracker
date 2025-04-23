@@ -4,11 +4,24 @@ import { format, parseISO, addWeeks, subWeeks, startOfWeek, addDays } from "date
 import { es } from "date-fns/locale";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { DailyMeals, MealType, MealTypeValues, MealWithComments, InsertMeal } from "@shared/schema";
+import { DailyMeals, MealType, MealTypeValues, MealWithComments, InsertMeal, MealPlanWithDetails } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Plus, Calendar } from "lucide-react";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, Plus, Calendar, CalendarCheck } from "lucide-react";
 import MealForm from "@/components/forms/meal-form";
 import MealTable from "@/components/meal-table";
 import { formatDateToISO } from "@/lib/dates";
@@ -42,6 +55,26 @@ export default function WeeklyView() {
       const response = await fetch(`/api/meals/weekly?date=${queryKey[1]}`);
       if (!response.ok) throw new Error("Error fetching weekly meals");
       return response.json();
+    }
+  });
+  
+  // Fetch active meal plan
+  const { data: activeMealPlan, isLoading: isLoadingMealPlan } = useQuery<MealPlanWithDetails>({
+    queryKey: ["/api/meal-plans/active"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/meal-plans/active");
+        if (response.status === 404) {
+          return null;
+        }
+        if (!response.ok) throw new Error("Error fetching active meal plan");
+        return response.json();
+      } catch (error) {
+        if ((error as Error).message.includes("404")) {
+          return null;
+        }
+        throw error;
+      }
     }
   });
 
@@ -177,6 +210,15 @@ export default function WeeklyView() {
       format(new Date(summary.date), 'yyyy-MM-dd') === day
     );
   };
+  
+  // Get meal plan detail for a specific day and meal type
+  const getMealPlanDetail = (day: string, mealType: string) => {
+    if (!activeMealPlan || !activeMealPlan.details) return null;
+    
+    return activeMealPlan.details.find(
+      detail => format(new Date(detail.day), "yyyy-MM-dd") === day && detail.mealType === mealType
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -211,6 +253,70 @@ export default function WeeklyView() {
           </Button>
         </div>
       </div>
+      
+      {/* Active Meal Plan */}
+      {activeMealPlan && activeMealPlan.published && (
+        <Card className="mb-6 border-green-200">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-lg flex items-center">
+                  <CalendarCheck className="h-5 w-5 mr-2 text-green-600" />
+                  Plan de comidas recomendado
+                  <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">Activo</Badge>
+                </CardTitle>
+                <CardDescription>
+                  {activeMealPlan.description}
+                </CardDescription>
+              </div>
+              <div className="text-sm text-gray-500">
+                Semana del {format(new Date(activeMealPlan.weekStart), "d 'de' MMMM", { locale: es })} al {format(new Date(activeMealPlan.weekEnd), "d 'de' MMMM yyyy", { locale: es })}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="text-left p-2 bg-gray-100 text-xs font-medium">Comida</th>
+                    {weekDays.map((day) => (
+                      <th key={day.toString()} className="text-center p-2 bg-gray-100 text-xs font-medium">
+                        {format(day, "EEE d", { locale: es })}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(MealType).map(([type, label]) => (
+                    <tr key={type} className="border-b">
+                      <td className="text-left p-2 text-sm font-medium">{label}</td>
+                      {weekDays.map((day) => {
+                        const dayStr = format(day, "yyyy-MM-dd");
+                        const detail = getMealPlanDetail(dayStr, type);
+                        
+                        return (
+                          <td key={dayStr} className="text-center p-2">
+                            {detail ? (
+                              <div className="p-2 rounded bg-gray-50 text-xs text-left">
+                                {detail.description.length > 50 
+                                  ? `${detail.description.slice(0, 50)}...` 
+                                  : detail.description}
+                              </div>
+                            ) : (
+                              <span className="text-gray-300">-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Weekly Meal Table */}
       {isLoading ? (

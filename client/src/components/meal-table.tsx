@@ -34,28 +34,28 @@ export default function MealTable({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-card rounded-lg shadow overflow-hidden border border-border">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted/50">
             <tr>
-              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">
                 Comida
               </th>
               {weekDays.map((day) => (
-                <th key={day.toISOString()} scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th key={day.toISOString()} scope="col" className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <div>{format(day, 'EEEE', { locale: es })}</div>
-                  <div className="text-gray-400 font-normal">{format(day, 'd MMM', { locale: es })}</div>
+                  <div className="text-muted-foreground/70 font-normal">{format(day, 'd MMM', { locale: es })}</div>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-background divide-y divide-border">
             {/* Desayuno */}
             <tr>
               <td className="px-4 py-3 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">Desayuno</div>
-                <div className="text-xs text-gray-500">8:00 AM</div>
+                <div className="text-sm font-medium text-foreground">Desayuno</div>
+                <div className="text-xs text-muted-foreground">8:00 AM</div>
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -65,26 +65,26 @@ export default function MealTable({
                   <td key={`${dayStr}-breakfast`} className="px-4 py-3">
                     {meal ? (
                       <div 
-                        className="text-sm text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
                         onClick={() => onEditMeal(meal)}
                       >
                         <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-gray-500">{meal.description}</div>}
+                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
                         {meal.comments && meal.comments.length > 0 && (
                           <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary-500 mr-1" />
-                            <span className="text-xs text-primary-600">{meal.comments.length} comentario(s)</span>
+                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 p-2">
+                      <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
                         {!isNutritionist && (
                           <Button
                             variant="link"
                             size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary-600 hover:text-primary-800"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
                             onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
                           >
                             + Añadir
@@ -100,8 +100,8 @@ export default function MealTable({
             {/* Media Mañana */}
             <tr>
               <td className="px-4 py-3 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">Media Mañana</div>
-                <div className="text-xs text-gray-500">11:00 AM</div>
+                <div className="text-sm font-medium text-foreground">Media Mañana</div>
+                <div className="text-xs text-muted-foreground">11:00 AM</div>
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -111,26 +111,26 @@ export default function MealTable({
                   <td key={`${dayStr}-morning-snack`} className="px-4 py-3">
                     {meal ? (
                       <div 
-                        className="text-sm text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
                         onClick={() => onEditMeal(meal)}
                       >
                         <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-gray-500">{meal.description}</div>}
+                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
                         {meal.comments && meal.comments.length > 0 && (
                           <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary-500 mr-1" />
-                            <span className="text-xs text-primary-600">{meal.comments.length} comentario(s)</span>
+                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 p-2">
+                      <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
                         {!isNutritionist && (
                           <Button
                             variant="link"
                             size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary-600 hover:text-primary-800"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
                             onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
                           >
                             + Añadir
@@ -146,8 +146,8 @@ export default function MealTable({
             {/* Comida */}
             <tr>
               <td className="px-4 py-3 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">Comida</div>
-                <div className="text-xs text-gray-500">2:00 PM</div>
+                <div className="text-sm font-medium text-foreground">Comida</div>
+                <div className="text-xs text-muted-foreground">2:00 PM</div>
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -157,32 +157,32 @@ export default function MealTable({
                   <td key={`${dayStr}-lunch`} className="px-4 py-3">
                     {meal ? (
                       <div 
-                        className="text-sm text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
                         onClick={() => onEditMeal(meal)}
                       >
                         <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-gray-500">{meal.description}</div>}
+                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
                         {meal.comments && meal.comments.length > 0 && (
                           <div className="mt-1 flex items-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary">
                               Comentario del nutricionista
                             </span>
                           </div>
                         )}
                         {meal.comments && meal.comments.length > 0 && (
-                          <div className="mt-1 text-xs italic text-gray-600 bg-gray-50 p-1 rounded">
+                          <div className="mt-1 text-xs italic text-muted-foreground bg-muted/50 p-1 rounded">
                             {meal.comments[0].content}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 p-2">
+                      <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
                         {!isNutritionist && (
                           <Button
                             variant="link"
                             size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary-600 hover:text-primary-800"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
                             onClick={() => onAddMeal(dayStr, MealType.LUNCH)}
                           >
                             + Añadir
@@ -198,8 +198,8 @@ export default function MealTable({
             {/* Media Tarde */}
             <tr>
               <td className="px-4 py-3 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">Media Tarde</div>
-                <div className="text-xs text-gray-500">5:00 PM</div>
+                <div className="text-sm font-medium text-foreground">Media Tarde</div>
+                <div className="text-xs text-muted-foreground">5:00 PM</div>
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -209,26 +209,26 @@ export default function MealTable({
                   <td key={`${dayStr}-afternoon-snack`} className="px-4 py-3">
                     {meal ? (
                       <div 
-                        className="text-sm text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
                         onClick={() => onEditMeal(meal)}
                       >
                         <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-gray-500">{meal.description}</div>}
+                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
                         {meal.comments && meal.comments.length > 0 && (
                           <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary-500 mr-1" />
-                            <span className="text-xs text-primary-600">{meal.comments.length} comentario(s)</span>
+                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 p-2">
+                      <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
                         {!isNutritionist && (
                           <Button
                             variant="link"
                             size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary-600 hover:text-primary-800"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
                             onClick={() => onAddMeal(dayStr, MealType.AFTERNOON_SNACK)}
                           >
                             + Añadir
@@ -244,8 +244,8 @@ export default function MealTable({
             {/* Cena */}
             <tr>
               <td className="px-4 py-3 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">Cena</div>
-                <div className="text-xs text-gray-500">9:00 PM</div>
+                <div className="text-sm font-medium text-foreground">Cena</div>
+                <div className="text-xs text-muted-foreground">9:00 PM</div>
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -255,26 +255,26 @@ export default function MealTable({
                   <td key={`${dayStr}-dinner`} className="px-4 py-3">
                     {meal ? (
                       <div 
-                        className="text-sm text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                        className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
                         onClick={() => onEditMeal(meal)}
                       >
                         <div className="font-medium">{meal.name}</div>
-                        {meal.description && <div className="text-xs text-gray-500">{meal.description}</div>}
+                        {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
                         {meal.comments && meal.comments.length > 0 && (
                           <div className="mt-1 flex items-center">
-                            <MessageCircle className="h-3 w-3 text-primary-500 mr-1" />
-                            <span className="text-xs text-primary-600">{meal.comments.length} comentario(s)</span>
+                            <MessageCircle className="h-3 w-3 text-primary mr-1" />
+                            <span className="text-xs text-primary">{meal.comments.length} comentario(s)</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 p-2">
+                      <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
                         {!isNutritionist && (
                           <Button
                             variant="link"
                             size="sm"
-                            className="mt-1 h-auto p-0 text-xs text-primary-600 hover:text-primary-800"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
                             onClick={() => onAddMeal(dayStr, MealType.DINNER)}
                           >
                             + Añadir
@@ -290,7 +290,7 @@ export default function MealTable({
             {/* Calorías */}
             <tr>
               <td className="px-4 py-3 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">Calorías</div>
+                <div className="text-sm font-medium text-foreground">Calorías</div>
               </td>
               {weekDays.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd');
@@ -298,7 +298,7 @@ export default function MealTable({
                 
                 return (
                   <td key={`${dayStr}-calories`} className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-900 p-2">
+                    <div className="text-sm font-medium text-foreground p-2">
                       {calories > 0 ? calories.toLocaleString() : '-'}
                     </div>
                   </td>

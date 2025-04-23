@@ -24,6 +24,9 @@ const registerSchema = insertUserSchema.extend({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"]
+}).refine(data => {
+  // Forzar el rol de nutricionista para el registro directo
+  return data.role === "nutritionist";
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -60,8 +63,8 @@ export default function AuthPage() {
       confirmPassword: "",
       name: "",
       email: "",
-      role: "client",
-      nutritionistId: 1, // Default to first nutritionist
+      role: "nutritionist", // Solo los nutricionistas pueden registrarse directamente
+      nutritionistId: null, // No tiene nutricionista asignado
       active: true
     }
   });
@@ -160,9 +163,12 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle>Crear Cuenta</CardTitle>
+                  <CardTitle>Crear Cuenta de Nutricionista</CardTitle>
                   <CardDescription>
-                    Completa el formulario para registrarte en NutriTrack
+                    Completa el formulario para registrarte como nutricionista en NutriTrack.
+                    <p className="mt-1 text-sm">
+                      Si eres paciente, debes usar el enlace de invitación de tu nutricionista.
+                    </p>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

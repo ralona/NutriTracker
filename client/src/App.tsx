@@ -14,11 +14,13 @@ import HomePage from "@/pages/home-page";
 import WeeklyView from "@/pages/weekly-view";
 import MealTracking from "@/pages/meal-tracking";
 import NutritionistDashboard from "@/pages/nutritionist-dashboard";
+import ActivateInvitationPage from "@/pages/activate-invitation";
 
 function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/invite/:token" component={ActivateInvitationPage} />
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/meals/weekly" component={WeeklyView} />
       <ProtectedRoute path="/meals/daily" component={MealTracking} />

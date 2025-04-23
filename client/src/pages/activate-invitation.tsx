@@ -64,8 +64,12 @@ export default function ActivateInvitationPage() {
       return data;
     },
     enabled: !!token && !user,
-    retry: false,
-    onError: (error: any) => {
+    retry: false
+  });
+
+  // Manejar errores de la verificación
+  useEffect(() => {
+    if (error instanceof Error) {
       if (error.message.includes("expirada")) {
         setExpired(true);
       }
@@ -75,7 +79,7 @@ export default function ActivateInvitationPage() {
         variant: "destructive",
       });
     }
-  });
+  }, [error, toast]);
 
   // Redireccionar si ya hay sesión iniciada
   useEffect(() => {

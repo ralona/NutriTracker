@@ -387,9 +387,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Verificar token de invitación
-  app.get("/api/invitations/verify", async (req, res) => {
+  app.get("/api/invitations/verify/:token", async (req, res) => {
     try {
-      const token = req.query.token as string;
+      const token = req.params.token;
       
       if (!token) {
         return res.status(400).json({ message: "Token de invitación requerido" });
@@ -417,9 +417,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Activar cuenta con token de invitación
-  app.post("/api/invitations/activate", async (req, res) => {
+  app.post("/api/invitations/activate/:token", async (req, res) => {
     try {
-      const { token, password } = req.body;
+      const token = req.params.token;
+      const { password } = req.body;
       
       if (!token || !password) {
         return res.status(400).json({ message: "Token y contraseña son requeridos" });

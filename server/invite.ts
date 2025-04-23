@@ -27,7 +27,7 @@ export async function createInvitation(name: string, email: string, nutritionist
   });
   
   // Generar enlace de invitación
-  const inviteLink = `/accept-invite?token=${token}`;
+  const inviteLink = `/invite/${token}`;
   
   return {
     token,

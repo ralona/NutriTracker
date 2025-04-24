@@ -748,11 +748,33 @@ export default function ActivityTracking() {
                   <h4 className="font-medium">Apple Health</h4>
                   <p className="text-sm text-muted-foreground">Sincroniza datos desde tu iPhone o Apple Watch</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => {
-                  toast({
-                    title: "Función en desarrollo",
-                    description: "La integración con Apple Health estará disponible próximamente.",
-                  });
+                <Button variant="ghost" size="sm" onClick={async () => {
+                  try {
+                    // Configurar una integración de prueba con Apple Health
+                    const response = await apiRequest("POST", "/api/health-app-integration", {
+                      provider: "apple_health",
+                      accessToken: "test_token",
+                      refreshToken: "test_refresh",
+                      tokenExpiry: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 días
+                      settings: {}
+                    });
+                    
+                    if (response.ok) {
+                      toast({
+                        title: "Conexión exitosa",
+                        description: "Ahora puedes sincronizar datos desde Apple Health.",
+                      });
+                      setIsHealthAppDialogOpen(false);
+                    } else {
+                      throw new Error("No se pudo conectar");
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error de conexión",
+                      description: "No se pudo establecer la conexión con Apple Health.",
+                      variant: "destructive"
+                    });
+                  }
                 }}>
                   Conectar
                 </Button>
@@ -766,11 +788,33 @@ export default function ActivityTracking() {
                   <h4 className="font-medium">Google Fit</h4>
                   <p className="text-sm text-muted-foreground">Sincroniza datos desde tu dispositivo Android o Wear OS</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => {
-                  toast({
-                    title: "Función en desarrollo",
-                    description: "La integración con Google Fit estará disponible próximamente.",
-                  });
+                <Button variant="ghost" size="sm" onClick={async () => {
+                  try {
+                    // Configurar una integración de prueba con Google Fit
+                    const response = await apiRequest("POST", "/api/health-app-integration", {
+                      provider: "google_fit",
+                      accessToken: "test_token",
+                      refreshToken: "test_refresh",
+                      tokenExpiry: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 días
+                      settings: {}
+                    });
+                    
+                    if (response.ok) {
+                      toast({
+                        title: "Conexión exitosa",
+                        description: "Ahora puedes sincronizar datos desde Google Fit.",
+                      });
+                      setIsHealthAppDialogOpen(false);
+                    } else {
+                      throw new Error("No se pudo conectar");
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error de conexión",
+                      description: "No se pudo establecer la conexión con Google Fit.",
+                      variant: "destructive"
+                    });
+                  }
                 }}>
                   Conectar
                 </Button>

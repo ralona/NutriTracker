@@ -727,8 +727,9 @@ export class DatabaseStorage implements IStorage {
     // Esto requeriría las credenciales de API correspondientes y OAuth
     
     const today = new Date();
+    const now = new Date();
     
-    // Simulamos los datos que vendría de la API externa
+    // Simulamos los datos que vendrían de la API externa
     let steps = 0;
     let caloriesBurned = 0;
     let exerciseMinutes = 0;
@@ -748,11 +749,16 @@ export class DatabaseStorage implements IStorage {
     // Buscamos si ya existe una actividad para hoy
     let activity = await this.getPhysicalActivityByDate(userId, today);
     
+    const syncNote = `Datos sincronizados automáticamente desde ${
+      integration.provider === "google_fit" ? "Google Fit" : "Apple Health"
+    } el ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    
     if (activity) {
       // Actualizamos la actividad existente
       activity = await this.updatePhysicalActivity(activity.id, {
         steps,
-        notes: `Datos sincronizados automáticamente desde ${integration.provider === "google_fit" ? "Google Fit" : "Apple Health"} el ${format(today, "dd/MM/yyyy HH:mm")}`,
+        fitSyncDate: now,
+        notes: syncNote
       });
     } else {
       // Creamos una nueva actividad
@@ -760,38 +766,46 @@ export class DatabaseStorage implements IStorage {
         userId,
         date: today,
         steps,
-        notes: `Datos sincronizados automáticamente desde ${integration.provider === "google_fit" ? "Google Fit" : "Apple Health"} el ${format(today, "dd/MM/yyyy HH:mm")}`,
+        fitSyncDate: now, 
+        notes: syncNote
       });
     }
     
     // Si tenemos minutos de ejercicio, creamos un ejercicio automático
     if (exerciseMinutes > 0) {
-      // Buscamos el tipo de ejercicio 'Caminar' o cualquier otro tipo disponible
-      const walkExerciseType = await db
-        .select()
-        .from(exerciseTypes)
-        .where(like(exerciseTypes.name, '%Caminar%'))
-        .limit(1);
-        
-      const exerciseTypeId = walkExerciseType.length > 0 
-        ? walkExerciseType[0].id 
-        : (await this.getExerciseTypes())[0]?.id;
-        
-      if (exerciseTypeId) {
-        // Agregamos la entrada de ejercicio
-        await this.addExerciseEntry({
-          activityId: activity.id,
-          exerciseTypeId,
-          duration: exerciseMinutes,
-          caloriesBurned,
-          notes: `Ejercicio detectado automáticamente por ${integration.provider === "google_fit" ? "Google Fit" : "Apple Health"}`,
-        });
+      try {
+        // Buscamos el tipo de ejercicio 'Caminar' o cualquier otro tipo disponible
+        const walkExerciseType = await db
+          .select()
+          .from(exerciseTypes)
+          .where(like(exerciseTypes.name, '%Caminar%'))
+          .limit(1);
+          
+        const exerciseTypeId = walkExerciseType.length > 0 
+          ? walkExerciseType[0].id 
+          : (await this.getExerciseTypes())[0]?.id;
+          
+        if (exerciseTypeId) {
+          // Agregamos la entrada de ejercicio
+          await this.addExerciseEntry({
+            activityId: activity.id,
+            exerciseTypeId,
+            duration: exerciseMinutes,
+            caloriesBurned,
+            notes: `Ejercicio detectado automáticamente por ${
+              integration.provider === "google_fit" ? "Google Fit" : "Apple Health"
+            }`
+          });
+        }
+      } catch (error) {
+        console.error("Error al crear ejercicio automático:", error);
+        // Continuamos incluso si hay error en la creación del ejercicio
       }
     }
     
     // Actualizamos la fecha de última sincronización
     await this.updateHealthAppIntegration(integration.id, {
-      lastSynced: new Date()
+      lastSynced: now
     });
     
     // Devolvemos la actividad completa con ejercicios

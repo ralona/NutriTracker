@@ -130,6 +130,12 @@ export default function ActivityTracking() {
     queryKey: ['/api/exercise-types'],
     queryFn: getQueryFn(),
   });
+  
+  // Query para obtener la integración con aplicaciones de salud
+  const { data: healthAppIntegration } = useQuery({
+    queryKey: ['/api/health-app-integration'],
+    queryFn: getQueryFn(),
+  });
 
   // Query para obtener la actividad del día seleccionado
   const { 
@@ -752,15 +758,27 @@ export default function ActivityTracking() {
                   <p className="text-sm text-muted-foreground">Sincroniza datos desde tu iPhone o Apple Watch</p>
                 </div>
                 <Button 
-                  variant="ghost" 
+                  variant={healthAppIntegration?.provider === 'apple_health' ? "outline" : "ghost"} 
                   size="sm" 
                   onClick={() => {
-                    setIsHealthAppDialogOpen(false);
-                    setOAuthProvider("apple_health");
-                    setIsOAuthDialogOpen(true);
+                    if (healthAppIntegration?.provider === 'apple_health') {
+                      toast({
+                        title: "Ya conectado",
+                        description: "Ya tienes una conexión activa con Apple Health.",
+                      });
+                    } else {
+                      setIsHealthAppDialogOpen(false);
+                      setOAuthProvider("apple_health");
+                      setIsOAuthDialogOpen(true);
+                    }
                   }}
                 >
-                  Conectar
+                  {healthAppIntegration?.provider === 'apple_health' ? (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                      Conectado
+                    </>
+                  ) : "Conectar"}
                 </Button>
               </div>
               
@@ -773,15 +791,27 @@ export default function ActivityTracking() {
                   <p className="text-sm text-muted-foreground">Sincroniza datos desde tu dispositivo Android o Wear OS</p>
                 </div>
                 <Button 
-                  variant="ghost" 
+                  variant={healthAppIntegration?.provider === 'google_fit' ? "outline" : "ghost"}
                   size="sm" 
                   onClick={() => {
-                    setIsHealthAppDialogOpen(false);
-                    setOAuthProvider("google_fit");
-                    setIsOAuthDialogOpen(true);
+                    if (healthAppIntegration?.provider === 'google_fit') {
+                      toast({
+                        title: "Ya conectado",
+                        description: "Ya tienes una conexión activa con Google Fit.",
+                      });
+                    } else {
+                      setIsHealthAppDialogOpen(false);
+                      setOAuthProvider("google_fit");
+                      setIsOAuthDialogOpen(true);
+                    }
                   }}
                 >
-                  Conectar
+                  {healthAppIntegration?.provider === 'google_fit' ? (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                      Conectado
+                    </>
+                  ) : "Conectar"}
                 </Button>
               </div>
             </div>
@@ -797,12 +827,12 @@ export default function ActivityTracking() {
                   handleSyncWithHealthApp();
                   setIsHealthAppDialogOpen(false);
                 }}
-                disabled={syncHealthAppMutation.isPending}
+                disabled={syncHealthAppMutation.isPending || !healthAppIntegration}
               >
                 {syncHealthAppMutation.isPending && (
                   <div className="mr-2 animate-spin rounded-full h-4 w-4 border-b-2 border-background"></div>
                 )}
-                Sincronizar ahora
+                {healthAppIntegration ? "Sincronizar ahora" : "No hay conexión activa"}
               </Button>
             </div>
           </div>

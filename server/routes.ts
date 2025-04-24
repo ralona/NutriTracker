@@ -1026,15 +1026,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Datos recibidos en API (ejercicio):", req.body);
       
-      // Asegurarse de que las fechas son objetos Date válidos o null
+      // Si startTime está vacío, establecerlo a null explícitamente
       let modifiedBody = { ...req.body };
-      if (typeof modifiedBody.startTime === 'string') {
-        if (!modifiedBody.startTime || modifiedBody.startTime === '') {
-          modifiedBody.startTime = null;
-        } else {
-          const date = new Date(modifiedBody.startTime);
-          modifiedBody.startTime = isNaN(date.getTime()) ? null : date;
-        }
+      if (modifiedBody.startTime === '') {
+        modifiedBody.startTime = null;
       }
       
       console.log("Datos procesados en API (ejercicio):", modifiedBody);

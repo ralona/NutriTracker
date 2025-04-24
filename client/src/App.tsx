@@ -13,6 +13,7 @@ import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/home-page";
 import WeeklyView from "@/pages/weekly-view";
 import MealTracking from "@/pages/meal-tracking";
+import ActivityTracking from "@/pages/activity-tracking";
 import NutritionistDashboard from "@/pages/nutritionist-dashboard";
 import MealPlanManagement from "@/pages/meal-plan-management";
 import ActivateInvitationPage from "@/pages/activate-invitation";
@@ -44,6 +45,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/meals/weekly" component={WeeklyView} />
       <ProtectedRoute path="/meals/daily" component={MealTracking} />
+      <ProtectedRoute path="/activities" component={ActivityTracking} />
       <NutritionistRoute path="/nutritionist" component={NutritionistDashboard} />
       <NutritionistRoute path="/meal-plans" component={MealPlanManagement} />
       <Route component={NotFound} />

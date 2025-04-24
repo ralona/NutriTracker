@@ -16,7 +16,12 @@ import {
   MealType,
   DailyMeals,
   mealPlans as mealPlansTable,
-  mealPlanDetails as mealPlanDetailsTable
+  mealPlanDetails as mealPlanDetailsTable,
+  physicalActivities,
+  exerciseEntries,
+  exerciseTypes,
+  healthAppIntegrations,
+  type PhysicalActivity
 } from "@shared/schema";
 import { eq, and, inArray, between, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -854,6 +859,286 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(mealPlansWithDetails);
     } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // RUTAS PARA ACTIVIDAD FÍSICA Y EJERCICIOS
+
+  // Obtener tipos de ejercicios disponibles
+  app.get("/api/exercise-types", isAuthenticated, async (req, res) => {
+    try {
+      const exerciseTypes = await storage.getExerciseTypes();
+      res.json(exerciseTypes);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Crear nuevo tipo de ejercicio (solo nutricionistas)
+  app.post("/api/exercise-types", isNutritionist, async (req, res) => {
+    try {
+      const exerciseType = await storage.createExerciseType({
+        ...req.body,
+        active: true
+      });
+      res.status(201).json(exerciseType);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Actualizar tipo de ejercicio (solo nutricionistas)
+  app.patch("/api/exercise-types/:id", isNutritionist, async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+      const exerciseType = await storage.updateExerciseType(id, req.body);
+      res.json(exerciseType);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Obtener actividad física para un día específico
+  app.get("/api/physical-activity/daily", isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
+    const dateStr = req.query.date as string || new Date().toISOString();
+    const date = parseISO(dateStr);
+    
+    try {
+      const activity = await storage.getPhysicalActivityByDate(userId, date);
+      
+      if (activity) {
+        const activityWithExercises = await storage.getPhysicalActivityWithExercises(activity.id);
+        res.json(activityWithExercises);
+      } else {
+        res.json(null);
+      }
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Obtener actividades físicas para una semana
+  app.get("/api/physical-activity/weekly", isAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
+    const dateStr = req.query.date as string;
+    let date;
+    
+    if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      date = parseISO(dateStr);
+    } else {
+      date = dateStr ? parseISO(dateStr) : new Date();
+    }
+    
+    const weekStart = startOfDay(date);
+    const weekEnd = endOfDay(addDays(weekStart, 6));
+    
+    try {
+      const activities = await storage.getPhysicalActivitiesByDateRange(userId, weekStart, weekEnd);
+      
+      // Formatear las actividades por día
+      const weeklyActivities: Record<string, PhysicalActivity> = {};
+      
+      // Inicializar días de la semana
+      for (let i = 0; i < 7; i++) {
+        const day = addDays(weekStart, i);
+        const dayKey = format(day, 'yyyy-MM-dd');
+        weeklyActivities[dayKey] = null as any; // Inicialmente sin actividad
+      }
+      
+      // Rellenar con datos reales
+      for (const activity of activities) {
+        const activityDate = activity.date instanceof Date ? activity.date : new Date(activity.date);
+        const dayKey = format(activityDate, 'yyyy-MM-dd');
+        weeklyActivities[dayKey] = activity;
+      }
+      
+      res.json(weeklyActivities);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Crear o actualizar actividad física diaria
+  app.post("/api/physical-activity", isAuthenticated, async (req, res) => {
+    try {
+      const activityData = insertPhysicalActivitySchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const activity = await storage.createPhysicalActivity(activityData);
+      res.status(201).json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Actualizar actividad física existente
+  app.patch("/api/physical-activity/:id", isAuthenticated, async (req, res) => {
+    const id = Number(req.params.id);
+    
+    try {
+      // Verificar que la actividad pertenece al usuario o es nutricionista
+      const activity = await db
+        .select()
+        .from(physicalActivities)
+        .where(eq(physicalActivities.id, id));
+      
+      if (!activity.length) {
+        return res.status(404).json({ message: "Actividad física no encontrada" });
+      }
+      
+      if (activity[0].userId !== req.user!.id && req.user!.role !== "nutritionist") {
+        return res.status(403).json({ message: "No tiene permisos para editar esta actividad" });
+      }
+      
+      const updatedActivity = await storage.updatePhysicalActivity(id, req.body);
+      res.json(updatedActivity);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Añadir un ejercicio a una actividad física
+  app.post("/api/exercise-entries", isAuthenticated, async (req, res) => {
+    try {
+      const entryData = insertExerciseEntrySchema.parse(req.body);
+      
+      // Verificar que la actividad pertenece al usuario
+      const activity = await db
+        .select()
+        .from(physicalActivities)
+        .where(eq(physicalActivities.id, entryData.activityId));
+      
+      if (!activity.length) {
+        return res.status(404).json({ message: "Actividad física no encontrada" });
+      }
+      
+      if (activity[0].userId !== req.user!.id) {
+        return res.status(403).json({ message: "No tiene permisos para modificar esta actividad" });
+      }
+      
+      const entry = await storage.addExerciseEntry(entryData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Actualizar un ejercicio existente
+  app.patch("/api/exercise-entries/:id", isAuthenticated, async (req, res) => {
+    const id = Number(req.params.id);
+    
+    try {
+      // Verificar que el ejercicio pertenece a una actividad del usuario
+      const exerciseWithActivity = await db
+        .select({
+          exercise: exerciseEntries,
+          activity: physicalActivities
+        })
+        .from(exerciseEntries)
+        .where(eq(exerciseEntries.id, id))
+        .leftJoin(physicalActivities, eq(exerciseEntries.activityId, physicalActivities.id));
+      
+      if (!exerciseWithActivity.length) {
+        return res.status(404).json({ message: "Ejercicio no encontrado" });
+      }
+      
+      const activity = exerciseWithActivity[0].activity;
+      
+      if (!activity || activity.userId !== req.user!.id) {
+        return res.status(403).json({ message: "No tiene permisos para modificar este ejercicio" });
+      }
+      
+      const updatedEntry = await storage.updateExerciseEntry(id, req.body);
+      res.json(updatedEntry);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Eliminar un ejercicio
+  app.delete("/api/exercise-entries/:id", isAuthenticated, async (req, res) => {
+    const id = Number(req.params.id);
+    
+    try {
+      // Verificar que el ejercicio pertenece a una actividad del usuario
+      const exerciseWithActivity = await db
+        .select({
+          exercise: exerciseEntries,
+          activity: physicalActivities
+        })
+        .from(exerciseEntries)
+        .where(eq(exerciseEntries.id, id))
+        .leftJoin(physicalActivities, eq(exerciseEntries.activityId, physicalActivities.id));
+      
+      if (!exerciseWithActivity.length) {
+        return res.status(404).json({ message: "Ejercicio no encontrado" });
+      }
+      
+      const activity = exerciseWithActivity[0].activity;
+      
+      if (!activity || activity.userId !== req.user!.id) {
+        return res.status(403).json({ message: "No tiene permisos para eliminar este ejercicio" });
+      }
+      
+      await storage.deleteExerciseEntry(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Integración con aplicaciones de salud
+
+  // Configurar integración
+  app.post("/api/health-app-integration", isAuthenticated, async (req, res) => {
+    try {
+      const integrationData = insertHealthAppIntegrationSchema.parse({
+        ...req.body,
+        userId: req.user!.id,
+        active: true,
+        lastSynced: new Date()
+      });
+      
+      const integration = await storage.createHealthAppIntegration(integrationData);
+      res.status(201).json(integration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Obtener configuración de integración actual
+  app.get("/api/health-app-integration", isAuthenticated, async (req, res) => {
+    try {
+      const integration = await storage.getHealthAppIntegration(req.user!.id);
+      res.json(integration || null);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Sincronizar datos
+  app.post("/api/health-app-sync", isAuthenticated, async (req, res) => {
+    try {
+      const activity = await storage.syncHealthAppData(req.user!.id);
+      res.json(activity);
+    } catch (error) {
+      // Si no hay integración activa, devolvemos 404
+      if ((error as Error).message.includes("No hay integración activa")) {
+        return res.status(404).json({ message: (error as Error).message });
+      }
       res.status(500).json({ message: (error as Error).message });
     }
   });

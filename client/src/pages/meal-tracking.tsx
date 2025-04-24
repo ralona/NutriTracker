@@ -89,9 +89,12 @@ export default function MealTracking() {
   const { data: weeklyData, isLoading: isLoadingWeekly } = useQuery({
     queryKey: ["/api/meals/weekly", selectedWeek.toISOString()],
     queryFn: async ({ queryKey }) => {
+      console.log("Cliente - Solicitando comidas semanales:", queryKey[1]);
       const response = await fetch(`/api/meals/weekly?date=${queryKey[1]}`);
       if (!response.ok) throw new Error("Error fetching weekly meals");
-      return response.json();
+      const data = await response.json();
+      console.log("Cliente - Datos recibidos:", data);
+      return data;
     },
     enabled: viewMode === "weekly"
   });

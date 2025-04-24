@@ -156,13 +156,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/meals/weekly", isAuthenticated, async (req, res) => {
     const userId = req.user.id;
     const dateStr = req.query.date as string || new Date().toISOString();
+    console.log("API /api/meals/weekly - Fecha recibida:", dateStr);
     const date = parseISO(dateStr);
     
     const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start from Monday
     const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+    console.log("API /api/meals/weekly - Rango de fechas:", format(weekStart, 'yyyy-MM-dd'), "hasta", format(weekEnd, 'yyyy-MM-dd'));
     
     try {
       const meals = await storage.getMealsByDateRange(userId, weekStart, weekEnd);
+      console.log("API /api/meals/weekly - Comidas recuperadas:", meals.length);
       
       // Group meals by day and type
       const weeklyMeals: Record<string, DailyMeals> = {};
@@ -175,7 +178,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fill with actual meal data
       for (const meal of meals) {
-        const dayKey = format(meal.date, 'yyyy-MM-dd');
+        // Aseguramos que la fecha sea un objeto Date válido
+        const mealDate = meal.date instanceof Date ? meal.date : new Date(meal.date);
+        const dayKey = format(mealDate, 'yyyy-MM-dd');
+        console.log("API - Procesando comida:", meal.id, "para día:", dayKey, "tipo:", meal.type);
+        
         const mealComments = await storage.getCommentsByMealId(meal.id);
         const mealWithComments = {
           ...meal,

@@ -155,13 +155,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get meals for a week
   app.get("/api/meals/weekly", isAuthenticated, async (req, res) => {
     const userId = req.user!.id;
-    const dateStr = req.query.date as string || new Date().toISOString();
-    console.log("API /api/meals/weekly - Fecha recibida:", dateStr);
-    const date = parseISO(dateStr);
     
-    const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start from Monday
-    const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
-    console.log("API /api/meals/weekly - Fecha parseada:", date);
+    // La fecha ahora viene en formato yyyy-MM-dd desde el cliente
+    const dateStr = req.query.date as string;
+    console.log("API /api/meals/weekly - Fecha recibida:", dateStr);
+    
+    let date;
+    // Si la fecha viene en formato yyyy-MM-dd (como la estamos enviando ahora)
+    if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      date = parseISO(dateStr);
+    } else {
+      // Fallback para la fecha en formato ISO o cuando no se proporciona
+      date = dateStr ? parseISO(dateStr) : new Date();
+    }
+    
+    // Para garantizar que el inicio de semana es el día proporcionado (no calcularlo)
+    const weekStart = startOfDay(date);
+    const weekEnd = endOfDay(addDays(weekStart, 6));
+    
+    console.log("API /api/meals/weekly - Fecha parseada:", format(date, 'yyyy-MM-dd'));
     console.log("API /api/meals/weekly - Rango de fechas:", format(weekStart, 'yyyy-MM-dd'), "hasta", format(weekEnd, 'yyyy-MM-dd'));
     
     try {
@@ -175,6 +187,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Group meals by day and type
       const weeklyMeals: Record<string, DailyMeals> = {};
+      
+      // Calcular cuál debería ser la semana actual
+      const today = new Date();
+      const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+      console.log("API /api/meals/weekly - Hoy es:", format(today, 'yyyy-MM-dd'));
+      console.log("API /api/meals/weekly - Semana actual debería ser:", format(currentWeekStart, 'yyyy-MM-dd'), "hasta", format(addDays(currentWeekStart, 6), 'yyyy-MM-dd'));
       
       // Initialize week days
       for (let i = 0; i < 7; i++) {

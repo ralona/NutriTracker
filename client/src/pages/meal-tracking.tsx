@@ -88,11 +88,12 @@ export default function MealTracking() {
   
   // Fetch weekly meals (vista semanal)
   const { data: weeklyData, isLoading: isLoadingWeekly } = useQuery({
-    queryKey: ["/api/meals/weekly", weekStart.toISOString()],
+    queryKey: ["/api/meals/weekly", format(weekStart, 'yyyy-MM-dd')],
     queryFn: async ({ queryKey }) => {
-      console.log("Cliente - Solicitando comidas semanales para:", queryKey[1]);
-      console.log("Cliente - Fecha inicio semana:", format(weekStart, 'yyyy-MM-dd'));
+      console.log("Cliente - Solicitando comidas semanales para semana del:", queryKey[1]);
       console.log("Cliente - Días de la semana:", weekDays.map(d => format(d, 'yyyy-MM-dd')));
+      
+      // Usamos el primer día de la semana como fecha de referencia (en formato yyyy-MM-dd)
       const response = await fetch(`/api/meals/weekly?date=${queryKey[1]}`);
       if (!response.ok) throw new Error("Error fetching weekly meals");
       const data = await response.json();

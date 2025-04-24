@@ -27,7 +27,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 
 // Definir los esquemas para los formularios
 const activityFormSchema = z.object({
-  date: z.string().default(() => format(new Date(), 'yyyy-MM-dd')),
+  date: z.preprocess(
+    // Convertir string a Date si es necesario
+    (arg) => arg instanceof Date ? arg : new Date(arg as string),
+    z.date()
+  ),
   steps: z.number().min(0).default(0),
   notes: z.string().optional()
 });
@@ -182,7 +186,7 @@ export default function ActivityTracking() {
   const activityForm = useForm<ActivityFormValues>({
     resolver: zodResolver(activityFormSchema),
     defaultValues: {
-      date: selectedDate,
+      date: new Date(selectedDate),
       steps: 0,
       notes: "",
     },
@@ -203,7 +207,7 @@ export default function ActivityTracking() {
   
   // Actualizar el formulario de actividad cuando cambia la fecha seleccionada
   useEffect(() => {
-    activityForm.setValue("date", selectedDate);
+    activityForm.setValue("date", new Date(selectedDate));
   }, [selectedDate, activityForm]);
   
   // Actualizar el formulario de ejercicio cuando se carga la actividad diaria

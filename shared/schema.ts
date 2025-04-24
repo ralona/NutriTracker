@@ -196,6 +196,7 @@ export const exerciseTypes = pgTable("exercise_types", {
   name: text("name").notNull(),
   description: text("description"),
   caloriesPerMinute: integer("calories_per_minute"),
+  iconName: text("icon_name"),  // Nombre del icono de Lucide React
   active: boolean("active").notNull().default(true),
 });
 
@@ -203,6 +204,7 @@ export const insertExerciseTypeSchema = createInsertSchema(exerciseTypes).pick({
   name: true,
   description: true,
   caloriesPerMinute: true,
+  iconName: true,
   active: true,
 });
 

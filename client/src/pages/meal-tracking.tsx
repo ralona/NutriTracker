@@ -559,11 +559,11 @@ export default function MealTracking() {
           {/* Weekly view */}
           <TabsContent value="weekly" className="m-0">
             {/* Weekly view navigation */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div className="text-sm text-gray-500">
                 Semana del {format(weekDays[0], "d 'de' MMMM", { locale: es })} al {format(weekDays[6], "d 'de' MMMM, yyyy", { locale: es })}
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button 
                   variant="outline" 
                   size="icon" 
@@ -584,6 +584,15 @@ export default function MealTracking() {
                   onClick={goToNextWeek}
                 >
                   <ChevronRight className="h-5 w-5" />
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={downloadMealsAsPDF}
+                  className="flex items-center gap-2"
+                  disabled={!weeklyData?.meals || Object.keys(weeklyData.meals).length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Descargar PDF</span>
                 </Button>
               </div>
             </div>

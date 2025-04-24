@@ -68,8 +68,11 @@ export default function MealTable({
                         {mealsList.map((meal, index) => (
                           <div 
                             key={meal.id || index}
-                            className="text-sm text-foreground cursor-pointer hover:bg-accent/10 p-2 rounded transition-colors"
-                            onClick={() => onEditMeal(meal)}
+                            className={cn(
+                              "text-sm text-foreground p-2 rounded transition-colors",
+                              !isNutritionist && "cursor-pointer hover:bg-accent/10"
+                            )}
+                            onClick={() => !isNutritionist && onEditMeal(meal)}
                           >
                             <div className="font-medium">{meal.name}</div>
                             {meal.description && <div className="text-xs text-muted-foreground">{meal.description}</div>}
@@ -81,26 +84,30 @@ export default function MealTable({
                             )}
                           </div>
                         ))}
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
-                          onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
-                        >
-                          <Plus className="h-3 w-3" /> Añadir
-                        </Button>
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                            onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
+                          >
+                            <Plus className="h-3 w-3" /> Añadir
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       <div className="text-sm text-muted-foreground p-2">
                         <div className="italic">No registrado</div>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
-                          onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
-                        >
-                          <Plus className="h-3 w-3" /> Añadir
-                        </Button>
+                        {!isNutritionist && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                            onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
+                          >
+                            <Plus className="h-3 w-3" /> Añadir
+                          </Button>
+                        )}
                       </div>
                     )}
                   </td>

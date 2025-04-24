@@ -14,7 +14,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus, Edit, Calendar, CalendarRange } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Edit, Calendar, CalendarRange, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import MealForm from "@/components/forms/meal-form";
 import { capitalizeFirstLetter } from "@/lib/utils";
 import MealTable from "@/components/meal-table";
@@ -255,6 +257,107 @@ export default function MealTracking() {
   const goToSelectedDayMeal = (date: Date) => {
     setSelectedDate(date);
     setViewMode("daily");
+  };
+  
+  // Función para descargar las comidas registradas como PDF
+  const downloadMealsAsPDF = () => {
+    try {
+      // Verificar que tenemos datos
+      if (!weeklyData || !weeklyData.meals) {
+        toast({
+          title: "Sin datos",
+          description: "No hay comidas registradas para exportar.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Crear un nuevo documento PDF
+      const doc = new jsPDF();
+      
+      // Añadir título
+      doc.setFontSize(18);
+      doc.text("Registro Semanal de Comidas", 14, 20);
+      
+      // Añadir periodo
+      doc.setFontSize(12);
+      doc.text(`Semana del ${format(weekDays[0], "d 'de' MMMM", { locale: es })} al ${format(weekDays[6], "d 'de' MMMM yyyy", { locale: es })}`, 14, 30);
+      
+      // Preparar encabezados para la tabla
+      const headers = ["Comida"];
+      weekDays.forEach(day => {
+        headers.push(format(day, "EEE d MMM", { locale: es }));
+      });
+      
+      // Preparar datos para la tabla
+      const tableData = Object.entries(MealType).map(([type, label]) => {
+        const row = [label];
+        
+        weekDays.forEach(day => {
+          const dayStr = format(day, "yyyy-MM-dd");
+          // Usamos type como clave para acceder a las comidas del día
+          const meals = weeklyData.meals[dayStr]?.[type as keyof typeof MealType];
+          
+          if (meals && meals.length > 0) {
+            const mealDescriptions = meals.map((meal: any) => meal.description).join("\n\n");
+            row.push(mealDescriptions);
+          } else {
+            row.push("-");
+          }
+        });
+        
+        return row;
+      });
+      
+      // Agregar la tabla al PDF
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: 40,
+        theme: 'grid',
+        styles: { 
+          fontSize: 9,
+          cellPadding: 2,
+          overflow: 'linebreak'
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 25 }
+        },
+        headStyles: {
+          fillColor: [100, 116, 139]
+        }
+      });
+      
+      // Añadir pie de página
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text('Generado el ' + format(new Date(), "dd/MM/yyyy HH:mm", { locale: es }), 
+               14, doc.internal.pageSize.height - 10);
+      }
+      
+      // Nombre del archivo
+      const fileName = `mis-comidas-${format(weekDays[0], "dd-MM-yyyy")}`;
+      
+      // Guardar PDF
+      doc.save(`${fileName}.pdf`);
+      
+      // Notificar al usuario
+      toast({
+        title: "PDF Generado",
+        description: "El registro de comidas se ha descargado correctamente.",
+        duration: 3000
+      });
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el PDF. Intente de nuevo.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (

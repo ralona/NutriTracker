@@ -444,41 +444,6 @@ export default function WeeklyView() {
           </Card>
         )
       )}
-
-      {/* Message about meal logging */}
-      <Card className="mb-6 border-gray-200">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="bg-gray-100 rounded-full p-4 mb-4">
-              <CalendarCheck className="h-10 w-10 text-primary" />
-            </div>
-            <h3 className="text-lg font-medium mb-2">Plan Nutricional</h3>
-            <p className="text-gray-500 max-w-md mb-4">
-              Esta sección es <strong>únicamente informativa</strong> y muestra exclusivamente el plan nutricional 
-              preparado por tu nutricionista. Para registrar y consultar tus propias comidas, 
-              debes utilizar la sección "Comidas Diarias".
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Button 
-                onClick={() => window.location.href = '/?view=daily'}
-                className="inline-flex items-center px-4 py-2 font-medium"
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                Ver Mis Comidas
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={downloadMealsAsPDF}
-                className="inline-flex items-center px-4 py-2 font-medium"
-              >
-                <Download className="h-5 w-5 mr-2" />
-                Descargar Mis Comidas
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
       
       {/* No forms for adding/editing meals in Weekly Plan view */}
     </div>

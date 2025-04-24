@@ -697,6 +697,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener comidas semanales de un cliente como nutricionista
+  app.get("/api/nutritionist/clients/:id/meals/weekly", isNutritionist, async (req, res) => {
+    try {
+      const clientId = Number(req.params.id);
+      const client = await storage.getUser(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Verificar que el cliente pertenece al nutricionista
+      if (client.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No tienes permiso para ver este cliente" });
+      }
+      
+      // Recuperar fechas de inicio y fin de la consulta
+      const startDateStr = req.query.startDate as string;
+      const endDateStr = req.query.endDate as string;
+      
+      let startDate, endDate;
+      
+      if (startDateStr && endDateStr) {
+        startDate = parseISO(startDateStr);
+        endDate = parseISO(endDateStr);
+      } else {
+        // Si no se especifican fechas, usar la semana actual
+        startDate = startOfWeek(new Date(), { weekStartsOn: 1 }); // Lunes
+        endDate = endOfWeek(new Date(), { weekStartsOn: 1 }); // Domingo
+      }
+      
+      startDate = startOfDay(startDate);
+      endDate = endOfDay(endDate);
+      
+      // Obtener comidas de la semana para el cliente
+      const meals = await storage.getMealsByDateRange(clientId, startDate, endDate);
+      
+      // Obtener comentarios para cada comida
+      const mealsWithComments = await Promise.all(
+        meals.map(async (meal) => {
+          const comments = await storage.getCommentsByMealId(meal.id);
+          return {
+            ...meal,
+            comments
+          };
+        })
+      );
+      
+      // Organizar por día y tipo de comida
+      const weeklyMeals: Record<string, DailyMeals> = {};
+      
+      // Inicializar días de la semana
+      for (let i = 0; i <= differenceInDays(endDate, startDate); i++) {
+        const day = addDays(startDate, i);
+        const dayKey = format(day, 'yyyy-MM-dd');
+        weeklyMeals[dayKey] = {};
+      }
+      
+      // Llenar con datos de comidas reales
+      for (const meal of mealsWithComments) {
+        const mealDate = meal.date instanceof Date ? meal.date : new Date(meal.date);
+        const dayKey = format(mealDate, 'yyyy-MM-dd');
+        
+        // Si ya existe un array para este tipo, añadimos la comida
+        if (weeklyMeals[dayKey][meal.type as keyof DailyMeals]) {
+          weeklyMeals[dayKey][meal.type as keyof DailyMeals]!.push(meal as MealWithComments);
+        } else {
+          // Si no existe, creamos un nuevo array con esta comida
+          weeklyMeals[dayKey][meal.type as keyof DailyMeals] = [meal as MealWithComments];
+        }
+      }
+      
+      res.json(weeklyMeals);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
   // Obtener actividad física de un cliente como nutricionista
   app.get("/api/nutritionist/clients/:id/activities", isNutritionist, async (req, res) => {
     try {

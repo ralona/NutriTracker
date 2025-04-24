@@ -70,7 +70,13 @@ export default function ClientCard({ client, onClick }: ClientCardProps) {
           <ExternalLink className="mr-2 h-4 w-4" />
           <span>Detalles</span>
         </Button>
-        <Button variant="outline" onClick={() => navigate(`/clients/${client.id}`)}>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            console.log(`Navegando a /nutritionist/clients/${client.id}`);
+            navigate(`/nutritionist/clients/${client.id}`);
+          }}
+        >
           <FileText className="mr-2 h-4 w-4" />
           <span>Perfil</span>
         </Button>

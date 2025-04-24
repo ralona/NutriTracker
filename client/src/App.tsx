@@ -49,7 +49,7 @@ function Router() {
       <ProtectedRoute path="/activities" component={ActivityTracking} />
       <NutritionistRoute path="/nutritionist" component={NutritionistDashboard} />
       <NutritionistRoute path="/meal-plans" component={MealPlanManagement} />
-      <NutritionistRoute path="/clients/:clientId" component={ClientProfile} />
+      <NutritionistRoute path="/nutritionist/clients/:clientId" component={ClientProfile} />
       <Route component={NotFound} />
     </Switch>
   );

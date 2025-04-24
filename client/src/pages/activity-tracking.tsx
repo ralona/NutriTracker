@@ -727,6 +727,84 @@ export default function ActivityTracking() {
           </div>
         </SheetContent>
       </Sheet>
+      
+      {/* Diálogo de integración con aplicaciones de salud */}
+      <Dialog open={isHealthAppDialogOpen} onOpenChange={setIsHealthAppDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Conectar con App de Salud</DialogTitle>
+            <DialogDescription>
+              Conecta tu cuenta con Google Fit o Apple Health para sincronizar automáticamente tus datos de actividad física.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center p-3 border rounded-md cursor-pointer hover:bg-accent">
+                <div className="mr-3 bg-red-100 p-2 rounded-full">
+                  <Heart className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium">Apple Health</h4>
+                  <p className="text-sm text-muted-foreground">Sincroniza datos desde tu iPhone o Apple Watch</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  toast({
+                    title: "Función en desarrollo",
+                    description: "La integración con Apple Health estará disponible próximamente.",
+                  });
+                }}>
+                  Conectar
+                </Button>
+              </div>
+              
+              <div className="flex items-center p-3 border rounded-md cursor-pointer hover:bg-accent">
+                <div className="mr-3 bg-blue-100 p-2 rounded-full">
+                  <Timer className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium">Google Fit</h4>
+                  <p className="text-sm text-muted-foreground">Sincroniza datos desde tu dispositivo Android o Wear OS</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  toast({
+                    title: "Función en desarrollo",
+                    description: "La integración con Google Fit estará disponible próximamente.",
+                  });
+                }}>
+                  Conectar
+                </Button>
+              </div>
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-2">
+              <h4 className="font-medium">Sincronización manual</h4>
+              <p className="text-sm text-muted-foreground">Puedes sincronizar manualmente tus datos si ya tienes una integración configurada.</p>
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  handleSyncWithHealthApp();
+                  setIsHealthAppDialogOpen(false);
+                }}
+                disabled={syncHealthAppMutation.isPending}
+              >
+                {syncHealthAppMutation.isPending && (
+                  <div className="mr-2 animate-spin rounded-full h-4 w-4 border-b-2 border-background"></div>
+                )}
+                Sincronizar ahora
+              </Button>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsHealthAppDialogOpen(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

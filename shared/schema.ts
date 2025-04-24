@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, uniqueIndex, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { uuidv7 } from "uuidv7";
 
 // User model (sin campo de usuario, usando email como identificación)
 export const users = pgTable("users", {
@@ -189,10 +190,109 @@ export type MealPlanWithDetails = MealPlan & {
 };
 
 // Client with nutrition data
+// Ejercicios y Actividad Física
+export const exerciseTypes = pgTable("exercise_types", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  caloriesPerMinute: integer("calories_per_minute"),
+  active: boolean("active").notNull().default(true),
+});
+
+export const insertExerciseTypeSchema = createInsertSchema(exerciseTypes).pick({
+  name: true,
+  description: true,
+  caloriesPerMinute: true,
+  active: true,
+});
+
+// Registro de actividad física diaria
+export const physicalActivities = pgTable("physical_activities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  steps: integer("steps").default(null),  // Pasos diarios
+  fitSyncDate: timestamp("fit_sync_date").default(null), // Fecha de última sincronización con app de fitness
+  notes: text("notes").default(null),
+});
+
+export const insertPhysicalActivitySchema = createInsertSchema(physicalActivities).pick({
+  userId: true,
+  date: true,
+  steps: true,
+  fitSyncDate: true,
+  notes: true,
+});
+
+// Ejercicios específicos realizados en un día
+export const exerciseEntries = pgTable("exercise_entries", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull(),
+  exerciseTypeId: integer("exercise_type_id").notNull(),
+  duration: integer("duration").notNull(), // Duración en minutos
+  caloriesBurned: integer("calories_burned").default(null),
+  notes: text("notes").default(null),
+  startTime: timestamp("start_time").default(null),
+});
+
+export const insertExerciseEntrySchema = createInsertSchema(exerciseEntries).pick({
+  activityId: true,
+  exerciseTypeId: true,
+  duration: true,
+  caloriesBurned: true,
+  notes: true,
+  startTime: true,
+});
+
+// Configuración de integración con aplicaciones de salud
+export const healthAppIntegrations = pgTable("health_app_integrations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  provider: text("provider", { enum: ["google_fit", "apple_health"] }).notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiry: timestamp("token_expiry"),
+  lastSynced: timestamp("last_synced"),
+  active: boolean("active").notNull().default(true),
+  settings: json("settings").default({}),
+});
+
+export const insertHealthAppIntegrationSchema = createInsertSchema(healthAppIntegrations).pick({
+  userId: true,
+  provider: true,
+  accessToken: true,
+  refreshToken: true,
+  tokenExpiry: true,
+  lastSynced: true,
+  active: true,
+  settings: true,
+});
+
+// Agregar tipos adicionales
+export type InsertExerciseType = z.infer<typeof insertExerciseTypeSchema>;
+export type ExerciseType = typeof exerciseTypes.$inferSelect;
+
+export type InsertPhysicalActivity = z.infer<typeof insertPhysicalActivitySchema>;
+export type PhysicalActivity = typeof physicalActivities.$inferSelect;
+
+export type InsertExerciseEntry = z.infer<typeof insertExerciseEntrySchema>;
+export type ExerciseEntry = typeof exerciseEntries.$inferSelect;
+
+export type InsertHealthAppIntegration = z.infer<typeof insertHealthAppIntegrationSchema>;
+export type HealthAppIntegration = typeof healthAppIntegrations.$inferSelect;
+
+// Tipos extendidos
+export type PhysicalActivityWithExercises = PhysicalActivity & {
+  exercises: (ExerciseEntry & {
+    exerciseType: ExerciseType;
+  })[];
+};
+
 export type ClientWithSummary = User & {
   latestMeal?: Meal;
   progress: number;
   pendingComments: number;
   lastWeekStatus: 'Bien' | 'Regular' | 'Insuficiente';
   activePlan?: MealPlanWithDetails;
+  latestActivity?: PhysicalActivityWithExercises;
 };

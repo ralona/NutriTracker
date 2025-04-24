@@ -5,7 +5,11 @@ import {
   nutritionSummaries, type NutritionSummary, type InsertNutritionSummary,
   mealPlans, type MealPlan, type InsertMealPlan,
   mealPlanDetails, type MealPlanDetail, type InsertMealPlanDetail,
-  ClientWithSummary, MealPlanWithDetails
+  exerciseTypes, type ExerciseType, type InsertExerciseType,
+  physicalActivities, type PhysicalActivity, type InsertPhysicalActivity,
+  exerciseEntries, type ExerciseEntry, type InsertExerciseEntry,
+  healthAppIntegrations, type HealthAppIntegration, type InsertHealthAppIntegration,
+  ClientWithSummary, MealPlanWithDetails, PhysicalActivityWithExercises
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -59,6 +63,28 @@ export interface IStorage {
   getActiveMealPlanForUser(userId: number, isNutritionist?: boolean): Promise<MealPlanWithDetails | undefined>;
   addMealPlanDetail(detail: InsertMealPlanDetail): Promise<MealPlanDetail>;
   deactivateMealPlan(id: number): Promise<void>;
+  
+  // Physical Activity management
+  getExerciseTypes(): Promise<ExerciseType[]>;
+  getExerciseTypeById(id: number): Promise<ExerciseType | undefined>;
+  createExerciseType(type: InsertExerciseType): Promise<ExerciseType>;
+  updateExerciseType(id: number, type: Partial<ExerciseType>): Promise<ExerciseType>;
+  
+  getPhysicalActivityByDate(userId: number, date: Date): Promise<PhysicalActivity | undefined>;
+  getPhysicalActivitiesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<PhysicalActivity[]>;
+  getPhysicalActivityWithExercises(id: number): Promise<PhysicalActivityWithExercises | undefined>;
+  createPhysicalActivity(activity: InsertPhysicalActivity): Promise<PhysicalActivity>;
+  updatePhysicalActivity(id: number, activity: Partial<PhysicalActivity>): Promise<PhysicalActivity>;
+  
+  addExerciseEntry(entry: InsertExerciseEntry): Promise<ExerciseEntry>;
+  updateExerciseEntry(id: number, entry: Partial<ExerciseEntry>): Promise<ExerciseEntry>;
+  deleteExerciseEntry(id: number): Promise<void>;
+  
+  // Health App Integration
+  getHealthAppIntegration(userId: number): Promise<HealthAppIntegration | undefined>;
+  createHealthAppIntegration(integration: InsertHealthAppIntegration): Promise<HealthAppIntegration>;
+  updateHealthAppIntegration(id: number, integration: Partial<HealthAppIntegration>): Promise<HealthAppIntegration>;
+  syncHealthAppData(userId: number): Promise<PhysicalActivity | undefined>;
   
   // Session store
   sessionStore: session.Store;

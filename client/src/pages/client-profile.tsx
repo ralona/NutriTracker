@@ -120,7 +120,9 @@ export default function ClientProfile() {
   const { clientId } = useParams();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState<"meals" | "activities">("meals");
+  const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "activities" | "plan">("daily");
+  
+  // No necesitamos importar los componentes ya que vamos a usar una vista más simple
   
   // Consultar datos del cliente
   const { data: client, isLoading: isLoadingClient } = useQuery({
@@ -144,7 +146,7 @@ export default function ClientProfile() {
       );
       return res.json();
     },
-    enabled: activeTab === "meals" && !!clientId
+    enabled: activeTab === "daily" && !!clientId
   });
   
   // Consultar actividad física del cliente para la fecha seleccionada

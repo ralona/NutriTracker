@@ -39,7 +39,10 @@ import {
   Send,
   Timer,
   Trophy,
-  BarChart4
+  BarChart4,
+  ClipboardList,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -147,6 +150,39 @@ export default function ClientProfile() {
       return res.json();
     },
     enabled: activeTab === "daily" && !!clientId
+  });
+  
+  // Obtener fecha de inicio de semana (lunes) para la vista semanal
+  const startOfWeek = new Date(selectedDate);
+  startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay() + (selectedDate.getDay() === 0 ? -6 : 1));
+  
+  // Generar array de fechas para la semana
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(startOfWeek);
+    day.setDate(startOfWeek.getDate() + i);
+    return day;
+  });
+  
+  // Consultar comidas de la semana para vista semanal
+  const { 
+    data: weeklyMeals = {}, 
+    isLoading: isLoadingWeeklyMeals 
+  } = useQuery({
+    queryKey: [
+      `/api/nutritionist/clients/${clientId}/meals/weekly`, 
+      format(startOfWeek, 'yyyy-MM-dd')
+    ],
+    queryFn: async () => {
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      const res = await apiRequest(
+        "GET", 
+        `/api/nutritionist/clients/${clientId}/meals/weekly?startDate=${format(startOfWeek, 'yyyy-MM-dd')}&endDate=${format(endOfWeek, 'yyyy-MM-dd')}`
+      );
+      return res.json();
+    },
+    enabled: activeTab === "weekly" && !!clientId
   });
   
   // Consultar actividad física del cliente para la fecha seleccionada
@@ -445,47 +481,61 @@ export default function ClientProfile() {
       </Card>
       
       {/* Pestañas para comidas y actividades */}
-      <Tabs defaultValue="meals" value={activeTab} onValueChange={(value) => setActiveTab(value as "meals" | "activities")}>
+      <Tabs defaultValue="daily" value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="meals" className="flex gap-2 items-center">
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4">
+            <TabsTrigger value="daily" className="flex gap-2 items-center">
               <Utensils className="size-4" />
-              <span>Comidas</span>
+              <span>Comidas diarias</span>
+            </TabsTrigger>
+            <TabsTrigger value="weekly" className="flex gap-2 items-center">
+              <CalendarRange className="size-4" />
+              <span>Vista semanal</span>
             </TabsTrigger>
             <TabsTrigger value="activities" className="flex gap-2 items-center">
               <Activity className="size-4" />
               <span>Actividad física</span>
             </TabsTrigger>
+            <TabsTrigger value="plan" className="flex gap-2 items-center">
+              <CalendarRange className="size-4" />
+              <span>Plan de comidas</span>
+            </TabsTrigger>
           </TabsList>
           
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDateChange(new Date(selectedDate.getTime() - 86400000))}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="min-w-32"
-              onClick={() => setSelectedDate(new Date())}
-            >
-              {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDateChange(new Date(selectedDate.getTime() + 86400000))}
-            >
-              Siguiente
-            </Button>
-          </div>
+          {(activeTab === "daily" || activeTab === "activities") && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => handleDateChange(new Date(selectedDate.getTime() - 86400000))}
+              >
+                <ChevronLeft className="size-4" />
+                <span className="hidden md:inline">Anterior</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-w-32"
+                onClick={() => setSelectedDate(new Date())}
+              >
+                {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => handleDateChange(new Date(selectedDate.getTime() + 86400000))}
+              >
+                <span className="hidden md:inline">Siguiente</span>
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          )}
         </div>
         
         {/* Contenido de pestañas */}
-        <TabsContent value="meals" className="mt-0">
+        <TabsContent value="daily" className="mt-0">
           {isLoadingMeals ? (
             <Card>
               <CardContent className="py-6">
@@ -624,6 +674,151 @@ export default function ClientProfile() {
                 );
               })}
             </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="weekly" className="mt-0">
+          {isLoadingWeeklyMeals ? (
+            <Card>
+              <CardContent className="py-6">
+                <div className="flex justify-center items-center h-64">
+                  <div className="flex flex-col items-center gap-2">
+                    <CalendarRange className="size-10 text-muted-foreground animate-pulse" />
+                    <p className="text-muted-foreground">Cargando comidas de la semana...</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div>Vista semanal de comidas</div>
+                  <div className="text-sm font-normal text-muted-foreground">
+                    {format(startOfWeek, "d MMM", { locale: es })} - {format(new Date(startOfWeek.getTime() + 6 * 86400000), "d MMM, yyyy", { locale: es })}
+                  </div>
+                </CardTitle>
+                <CardDescription>Resumen de las comidas del paciente durante la semana</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="text-left p-2 bg-muted/50 font-medium text-sm"></th>
+                        {weekDays.map((day) => (
+                          <th 
+                            key={format(day, 'yyyy-MM-dd')} 
+                            className={`text-center p-2 bg-muted/50 font-medium text-sm ${
+                              format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') 
+                                ? 'text-primary' 
+                                : ''
+                            }`}
+                          >
+                            <div>{format(day, 'EEEE', { locale: es })}</div>
+                            <div>{format(day, 'd MMM', { locale: es })}</div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(MealType).map(([key, mealType]) => (
+                        <tr key={key}>
+                          <td className="font-medium p-2 bg-muted/20">{mealType}</td>
+                          {weekDays.map((day) => {
+                            const dayKey = format(day, 'yyyy-MM-dd');
+                            const dayMeals = weeklyMeals[dayKey]?.[mealType as MealTypeValues] || [];
+                            
+                            return (
+                              <td 
+                                key={dayKey} 
+                                className="border p-2 align-top"
+                              >
+                                {dayMeals.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {dayMeals.map((meal: MealWithComments) => (
+                                      <div key={meal.id} className="text-sm">
+                                        <div className="font-medium">{meal.name}</div>
+                                        {meal.comments && meal.comments.length > 0 && (
+                                          <Badge variant="outline" className="text-xs mt-1 gap-1">
+                                            <MessageSquare className="size-3" />
+                                            {meal.comments.length}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="h-6"></div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="plan" className="mt-0">
+          {clientData.activePlan ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Plan de comidas activo</CardTitle>
+                <CardDescription>
+                  Creado el {format(new Date(clientData.activePlan.createdAt), 'dd/MM/yyyy')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {clientData.activePlan.details && clientData.activePlan.details.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {clientData.activePlan.details.map((detail: any) => (
+                        <Card key={detail.id}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">{detail.mealType}</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p>{detail.description}</p>
+                            {detail.notes && (
+                              <div className="mt-4 p-3 bg-muted/20 rounded-md text-sm">
+                                <p className="font-medium mb-1">Notas adicionales:</p>
+                                <p className="text-muted-foreground">{detail.notes}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="inline-flex items-center justify-center rounded-full bg-muted/30 p-3 mb-4">
+                        <AlertCircle className="size-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground">Este plan no contiene detalles específicos.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="bg-muted/20 rounded-full p-4 mb-4">
+                    <AlertCircle className="size-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No hay plan activo</h3>
+                  <p className="text-muted-foreground max-w-md">
+                    El paciente no tiene un plan de comidas activo. Puedes crear uno desde la sección de Planes de Comida.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
         

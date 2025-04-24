@@ -63,9 +63,48 @@ import {
   User
 } from "@shared/schema";
 
-// Extender ClientWithSummary para la vista de nutricionista
-interface ExtendedClientProfile extends ClientWithSummary {
+// Extender el tipo para la vista del nutricionista
+interface ExtendedClientProfile extends User {
+  latestMeal?: any;
+  progress: number;
+  pendingComments: number;
+  lastWeekStatus: 'Bien' | 'Regular' | 'Insuficiente';
+  activePlan?: any;
+  latestActivity?: any;
   healthIntegration?: HealthAppIntegration;
+}
+
+// Tipo custom para las comidas con propiedades adicionales
+interface ExtendedMeal {
+  id: number;
+  name: string;
+  userId: number;
+  type: string;
+  description: string | null;
+  date: Date;
+  calories: number | null;
+  time: string | null;
+  duration: number | null;
+  notes: string | null;
+  water?: number | null;
+  waterIntake?: number | null;
+  comments: Comment[];
+}
+
+// Tipo custom para ejercicios con propiedades adicionales
+interface ExtendedExerciseEntry {
+  id: number;
+  duration: number;
+  notes: string | null;
+  activityId: number;
+  exerciseTypeId: number;
+  caloriesBurned: number | null;
+  startTime: Date | null;
+  intensity?: 'high' | 'medium' | 'low';
+  exerciseType: {
+    name: string;
+    iconName?: string | null;
+  };
 }
 
 // Esquema para comentarios de nutricionista
@@ -379,8 +418,8 @@ export default function ClientProfile() {
                       }</span>
                       <span className="text-xs text-muted-foreground mt-1">
                         Última sincronización: {
-                          clientData.healthIntegration.lastSync
-                            ? format(new Date(clientData.healthIntegration.lastSync), 'dd/MM/yyyy HH:mm')
+                          clientData.healthIntegration.lastSynced
+                            ? format(new Date(clientData.healthIntegration.lastSynced), 'dd/MM/yyyy HH:mm')
                             : 'Nunca'
                         }
                       </span>
@@ -480,7 +519,7 @@ export default function ClientProfile() {
                       <CardTitle>{mealType}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {meals.map((meal: MealWithComments) => (
+                      {meals.map((meal: ExtendedMeal) => (
                         <div key={meal.id} className="border rounded-md p-4">
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
                             <h4 className="font-medium">{meal.name}</h4>
@@ -650,7 +689,7 @@ export default function ClientProfile() {
                   <div>
                     <h4 className="font-medium mb-3">Ejercicios realizados</h4>
                     <div className="space-y-3">
-                      {(activity as PhysicalActivityWithExercises).exercises.map((exercise: ExerciseEntry & { exerciseType: { name: string, iconName?: string }}) => (
+                      {(activity as PhysicalActivityWithExercises).exercises.map((exercise: ExtendedExerciseEntry) => (
                         <div key={exercise.id} className="flex items-center gap-3 border rounded-md p-3">
                           <div className="bg-primary/10 rounded-full p-2">
                             <Activity className="size-5 text-primary" />
@@ -658,7 +697,7 @@ export default function ClientProfile() {
                           <div className="flex-1">
                             <div className="font-medium">{exercise.exerciseType.name}</div>
                             <div className="text-sm text-muted-foreground">
-                              {exercise.duration} min • {exercise.intensity === 'high' ? 'Alta intensidad' : exercise.intensity === 'medium' ? 'Intensidad media' : 'Baja intensidad'}
+                              {exercise.duration} min {exercise.intensity ? `• ${exercise.intensity === 'high' ? 'Alta intensidad' : exercise.intensity === 'medium' ? 'Intensidad media' : 'Baja intensidad'}` : ''}
                             </div>
                           </div>
                           <Badge variant="outline">

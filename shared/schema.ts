@@ -263,15 +263,16 @@ export const healthAppIntegrations = pgTable("health_app_integrations", {
   settings: json("settings").default({}),
 });
 
-export const insertHealthAppIntegrationSchema = createInsertSchema(healthAppIntegrations).pick({
-  userId: true,
-  provider: true,
-  accessToken: true,
-  refreshToken: true,
-  tokenExpiry: true,
-  lastSynced: true,
-  active: true,
-  settings: true,
+// Modificamos el esquema para permitir strings en las fechas
+export const insertHealthAppIntegrationSchema = z.object({
+  userId: z.number(),
+  provider: z.enum(["google_fit", "apple_health"]),
+  accessToken: z.string(),
+  refreshToken: z.string().optional(),
+  tokenExpiry: z.string().or(z.date()).transform((val) => new Date(val)),
+  lastSynced: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : new Date()),
+  active: z.boolean().default(true),
+  settings: z.any().default({}),
 });
 
 // Agregar tipos adicionales

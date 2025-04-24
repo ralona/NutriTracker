@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import OAuthDialog from "@/components/oauth-dialog";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -121,6 +122,8 @@ export default function ActivityTracking() {
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [isHealthAppDialogOpen, setIsHealthAppDialogOpen] = useState(false);
+  const [isOAuthDialogOpen, setIsOAuthDialogOpen] = useState(false);
+  const [oAuthProvider, setOAuthProvider] = useState<'google_fit' | 'apple_health'>('apple_health');
   
   // Query para obtener los tipos de ejercicio
   const { data: exerciseTypes = [] } = useQuery({
@@ -748,34 +751,15 @@ export default function ActivityTracking() {
                   <h4 className="font-medium">Apple Health</h4>
                   <p className="text-sm text-muted-foreground">Sincroniza datos desde tu iPhone o Apple Watch</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={async () => {
-                  try {
-                    // Configurar una integración de prueba con Apple Health
-                    const response = await apiRequest("POST", "/api/health-app-integration", {
-                      provider: "apple_health",
-                      accessToken: "test_token",
-                      refreshToken: "test_refresh",
-                      tokenExpiry: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 días
-                      settings: {}
-                    });
-                    
-                    if (response.ok) {
-                      toast({
-                        title: "Conexión exitosa",
-                        description: "Ahora puedes sincronizar datos desde Apple Health.",
-                      });
-                      setIsHealthAppDialogOpen(false);
-                    } else {
-                      throw new Error("No se pudo conectar");
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error de conexión",
-                      description: "No se pudo establecer la conexión con Apple Health.",
-                      variant: "destructive"
-                    });
-                  }
-                }}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setIsHealthAppDialogOpen(false);
+                    setOAuthProvider("apple_health");
+                    setIsOAuthDialogOpen(true);
+                  }}
+                >
                   Conectar
                 </Button>
               </div>
@@ -788,34 +772,15 @@ export default function ActivityTracking() {
                   <h4 className="font-medium">Google Fit</h4>
                   <p className="text-sm text-muted-foreground">Sincroniza datos desde tu dispositivo Android o Wear OS</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={async () => {
-                  try {
-                    // Configurar una integración de prueba con Google Fit
-                    const response = await apiRequest("POST", "/api/health-app-integration", {
-                      provider: "google_fit",
-                      accessToken: "test_token",
-                      refreshToken: "test_refresh",
-                      tokenExpiry: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 días
-                      settings: {}
-                    });
-                    
-                    if (response.ok) {
-                      toast({
-                        title: "Conexión exitosa",
-                        description: "Ahora puedes sincronizar datos desde Google Fit.",
-                      });
-                      setIsHealthAppDialogOpen(false);
-                    } else {
-                      throw new Error("No se pudo conectar");
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error de conexión",
-                      description: "No se pudo establecer la conexión con Google Fit.",
-                      variant: "destructive"
-                    });
-                  }
-                }}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setIsHealthAppDialogOpen(false);
+                    setOAuthProvider("google_fit");
+                    setIsOAuthDialogOpen(true);
+                  }}
+                >
                   Conectar
                 </Button>
               </div>
@@ -849,6 +814,20 @@ export default function ActivityTracking() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Diálogo de OAuth */}
+      <OAuthDialog 
+        open={isOAuthDialogOpen} 
+        onClose={() => setIsOAuthDialogOpen(false)}
+        provider={oAuthProvider}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/health-app-integration'] });
+          toast({
+            title: "Conexión exitosa",
+            description: `Se ha conectado correctamente con ${oAuthProvider === 'google_fit' ? 'Google Fit' : 'Apple Health'}.`,
+          });
+        }}
+      />
     </div>
   );
 }

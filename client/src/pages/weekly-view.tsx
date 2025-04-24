@@ -251,9 +251,10 @@ export default function WeeklyView() {
           if (meals && meals.length > 0) {
             // Usar nombre en lugar de descripción
             const mealNames = meals.map(meal => meal.name || "Sin nombre").join("\n\n");
+            console.log(`PDF: Añadiendo comidas para día ${dayStr}, tipo ${type}:`, mealNames);
             row.push(mealNames);
           } else {
-            row.push("");  // Celda vacía en lugar de guión
+            row.push("-");  // Volvemos a usar guión para probar
           }
         });
         

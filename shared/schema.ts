@@ -216,12 +216,12 @@ export const physicalActivities = pgTable("physical_activities", {
   notes: text("notes").default(null),
 });
 
-export const insertPhysicalActivitySchema = createInsertSchema(physicalActivities).pick({
-  userId: true,
-  date: true,
-  steps: true,
-  fitSyncDate: true,
-  notes: true,
+export const insertPhysicalActivitySchema = z.object({
+  userId: z.number(),
+  date: z.string().or(z.date()).transform((val) => new Date(val)),
+  steps: z.number().optional(),
+  fitSyncDate: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : null),
+  notes: z.string().optional(),
 });
 
 // Ejercicios específicos realizados en un día
@@ -235,13 +235,13 @@ export const exerciseEntries = pgTable("exercise_entries", {
   startTime: timestamp("start_time").default(null),
 });
 
-export const insertExerciseEntrySchema = createInsertSchema(exerciseEntries).pick({
-  activityId: true,
-  exerciseTypeId: true,
-  duration: true,
-  caloriesBurned: true,
-  notes: true,
-  startTime: true,
+export const insertExerciseEntrySchema = z.object({
+  activityId: z.number(),
+  exerciseTypeId: z.number(),
+  duration: z.number().min(1, "La duración debe ser al menos 1 minuto"),
+  caloriesBurned: z.number().optional(),
+  notes: z.string().optional(),
+  startTime: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : null),
 });
 
 // Configuración de integración con aplicaciones de salud

@@ -96,7 +96,15 @@ export default function ActivityTracking() {
   // Mutation para crear o actualizar actividad física
   const activityMutation = useMutation({
     mutationFn: async (data: ActivityFormValues) => {
-      const res = await apiRequest('POST', '/api/physical-activity', data);
+      // Convertir fecha a formato ISO 8601 para el API
+      const formattedData = {
+        ...data,
+        date: data.date.toISOString()
+      };
+      
+      console.log("Enviando datos al servidor:", formattedData);
+      
+      const res = await apiRequest('POST', '/api/physical-activity', formattedData);
       return await res.json();
     },
     onSuccess: () => {
@@ -107,10 +115,22 @@ export default function ActivityTracking() {
         description: "Se ha registrado la actividad física correctamente.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      let errorMessage = error.message;
+      // Si hay un error de validación, formatearlo de manera más amigable
+      if (error.message && error.message.includes("errors")) {
+        try {
+          const errorData = JSON.parse(error.message.substring(error.message.indexOf('{')));
+          if (errorData.errors && errorData.errors.length > 0) {
+            errorMessage = errorData.errors.map((e: any) => e.message).join(", ");
+          }
+        } catch (e) {
+          // Si no puede parsearse, usar el mensaje original
+        }
+      }
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error al registrar actividad",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -119,6 +139,7 @@ export default function ActivityTracking() {
   // Mutation para agregar ejercicio
   const exerciseMutation = useMutation({
     mutationFn: async (data: ExerciseFormValues) => {
+      console.log("Enviando ejercicio al servidor:", data);
       const res = await apiRequest('POST', '/api/exercise-entries', data);
       return await res.json();
     },
@@ -130,10 +151,22 @@ export default function ActivityTracking() {
         description: "Se ha agregado el ejercicio correctamente.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      let errorMessage = error.message;
+      // Si hay un error de validación, formatearlo de manera más amigable
+      if (error.message && error.message.includes("errors")) {
+        try {
+          const errorData = JSON.parse(error.message.substring(error.message.indexOf('{')));
+          if (errorData.errors && errorData.errors.length > 0) {
+            errorMessage = errorData.errors.map((e: any) => e.message).join(", ");
+          }
+        } catch (e) {
+          // Si no puede parsearse, usar el mensaje original
+        }
+      }
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Error al agregar ejercicio",
+        description: errorMessage,
         variant: "destructive",
       });
     },

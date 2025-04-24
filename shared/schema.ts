@@ -241,7 +241,11 @@ export const insertExerciseEntrySchema = z.object({
   duration: z.number().min(1, "La duración debe ser al menos 1 minuto"),
   caloriesBurned: z.number().optional(),
   notes: z.string().optional(),
-  startTime: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : null),
+  startTime: z.string().optional().transform((val) => {
+    if (!val || val === '') return null;
+    const date = new Date(val);
+    return isNaN(date.getTime()) ? null : date;
+  }),
 });
 
 // Configuración de integración con aplicaciones de salud

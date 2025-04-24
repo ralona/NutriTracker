@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 
 import { 
   AlertCircle, 
@@ -119,6 +120,7 @@ export default function ActivityTracking() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
+  const [isHealthAppDialogOpen, setIsHealthAppDialogOpen] = useState(false);
   
   // Query para obtener los tipos de ejercicio
   const { data: exerciseTypes = [] } = useQuery({
@@ -376,11 +378,10 @@ export default function ActivityTracking() {
             </div>
             <Button
               variant="outline"
-              onClick={() => handleSyncWithHealthApp()}
-              disabled={syncHealthAppMutation.isPending}
+              onClick={() => setIsHealthAppDialogOpen(true)}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Sincronizar
+              Sincronizar con App de Salud
             </Button>
           </div>
         </div>

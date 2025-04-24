@@ -236,8 +236,9 @@ export default function WeeklyView() {
           const meals = data.meals[dayStr]?.[type as keyof typeof MealType];
           
           if (meals && meals.length > 0) {
-            const mealDescriptions = meals.map(meal => meal.description).join("\n\n");
-            row.push(mealDescriptions);
+            // Usar nombre en lugar de descripción
+            const mealNames = meals.map(meal => meal.name || "Sin nombre").join("\n\n");
+            row.push(mealNames);
           } else {
             row.push("-");
           }

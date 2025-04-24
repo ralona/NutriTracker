@@ -306,8 +306,9 @@ export default function MealTracking() {
           const meals = weeklyData.meals[dayStr]?.[type as keyof typeof MealType];
           
           if (meals && meals.length > 0) {
-            const mealDescriptions = meals.map((meal: any) => meal.description).join("\n\n");
-            row.push(mealDescriptions);
+            // Usar el nombre de la comida en lugar de la descripción
+            const mealNames = meals.map((meal: any) => meal.name || "Sin nombre").join("\n\n");
+            row.push(mealNames);
           } else {
             row.push(""); // Celda vacía en lugar de un guión
           }
@@ -359,9 +360,22 @@ export default function MealTracking() {
       });
     } catch (error) {
       console.error("Error al generar PDF:", error);
+      
+      // Más información para depuración
+      if (weeklyData && Object.keys(weeklyData.meals).length > 0) {
+        console.log("Datos disponibles para PDF:", 
+          Object.keys(weeklyData.meals).map(key => ({ 
+            day: key, 
+            mealCount: Object.values(weeklyData.meals[key]).flat().length 
+          }))
+        );
+      } else {
+        console.log("No hay datos disponibles para generar el PDF");
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo generar el PDF. Intente de nuevo.",
+        description: "No se pudo generar el PDF. Revisa que tengas comidas registradas e intenta de nuevo.",
         variant: "destructive"
       });
     }

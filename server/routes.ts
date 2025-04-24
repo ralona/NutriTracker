@@ -154,18 +154,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get meals for a week
   app.get("/api/meals/weekly", isAuthenticated, async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const dateStr = req.query.date as string || new Date().toISOString();
     console.log("API /api/meals/weekly - Fecha recibida:", dateStr);
     const date = parseISO(dateStr);
     
     const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start from Monday
     const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+    console.log("API /api/meals/weekly - Fecha parseada:", date);
     console.log("API /api/meals/weekly - Rango de fechas:", format(weekStart, 'yyyy-MM-dd'), "hasta", format(weekEnd, 'yyyy-MM-dd'));
     
     try {
       const meals = await storage.getMealsByDateRange(userId, weekStart, weekEnd);
       console.log("API /api/meals/weekly - Comidas recuperadas:", meals.length);
+      
+      if (meals.length > 0) {
+        const primeraMeal = meals[0];
+        console.log("API /api/meals/weekly - Primera comida:", format(primeraMeal.date, 'yyyy-MM-dd'), "tipo:", primeraMeal.type);
+      }
       
       // Group meals by day and type
       const weeklyMeals: Record<string, DailyMeals> = {};
@@ -173,7 +179,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Initialize week days
       for (let i = 0; i < 7; i++) {
         const day = addDays(weekStart, i);
-        weeklyMeals[format(day, 'yyyy-MM-dd')] = {};
+        const dayKey = format(day, 'yyyy-MM-dd');
+        weeklyMeals[dayKey] = {};
+        console.log("API /api/meals/weekly - Inicializando día:", dayKey);
       }
       
       // Fill with actual meal data

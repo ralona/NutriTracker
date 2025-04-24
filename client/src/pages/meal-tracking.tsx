@@ -53,8 +53,8 @@ export default function MealTracking() {
 
   const [viewMode, setViewMode] = useState<"daily" | "weekly">(getInitialViewMode());
 
-  // Para la vista semanal
-  const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  // Para la vista semanal - usando la fecha actual para mostrar la semana correcta
+  const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
   
   // Función para navegar a la semana anterior
   const goToPreviousWeek = () => {
@@ -68,11 +68,12 @@ export default function MealTracking() {
   
   // Función para ir a la semana actual
   const goToCurrentWeek = () => {
-    setSelectedWeek(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    setSelectedWeek(new Date());
   };
   
-  // Generar los días de la semana
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(selectedWeek, i));
+  // Generar los días de la semana - asegurando que comience el lunes
+  const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   // Fetch meals for the selected date (vista diaria)
   const { data: meals, isLoading } = useQuery<DailyMeals>({
@@ -87,9 +88,11 @@ export default function MealTracking() {
   
   // Fetch weekly meals (vista semanal)
   const { data: weeklyData, isLoading: isLoadingWeekly } = useQuery({
-    queryKey: ["/api/meals/weekly", selectedWeek.toISOString()],
+    queryKey: ["/api/meals/weekly", weekStart.toISOString()],
     queryFn: async ({ queryKey }) => {
-      console.log("Cliente - Solicitando comidas semanales:", queryKey[1]);
+      console.log("Cliente - Solicitando comidas semanales para:", queryKey[1]);
+      console.log("Cliente - Fecha inicio semana:", format(weekStart, 'yyyy-MM-dd'));
+      console.log("Cliente - Días de la semana:", weekDays.map(d => format(d, 'yyyy-MM-dd')));
       const response = await fetch(`/api/meals/weekly?date=${queryKey[1]}`);
       if (!response.ok) throw new Error("Error fetching weekly meals");
       const data = await response.json();

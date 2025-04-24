@@ -620,12 +620,12 @@ export default function ClientManagement() {
                   variant="outline" 
                   className="gap-2 w-full"
                   onClick={() => {
+                    navigate(`/clients/${selectedClient.id}`);
                     setSelectedClient(null);
-                    // Añadir lógica para ir a la vista de comidas
                   }}
                 >
-                  <ExternalLink className="size-4" />
-                  <span>Ver historial de comidas</span>
+                  <FileText className="size-4" />
+                  <span>Ver perfil completo</span>
                 </Button>
                 <Button 
                   variant="outline" 

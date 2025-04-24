@@ -2,10 +2,11 @@ import { ClientWithSummary } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Calendar, MessageSquare, Activity } from "lucide-react";
+import { ExternalLink, Calendar, MessageSquare, Activity, FileText } from "lucide-react";
 import { getProgressLabel, getStatusBadgeClass } from "@/lib/utils";
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
+import { useLocation } from "wouter";
 
 interface ClientCardProps {
   client: ClientWithSummary;
@@ -13,6 +14,7 @@ interface ClientCardProps {
 }
 
 export default function ClientCard({ client, onClick }: ClientCardProps) {
+  const [, navigate] = useLocation();
   const hasRecentActivity = client.latestMeal && 
     (new Date().getTime() - new Date(client.latestMeal.date).getTime()) < 7 * 24 * 60 * 60 * 1000;
 
@@ -63,10 +65,14 @@ export default function ClientCard({ client, onClick }: ClientCardProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="pt-2">
-        <Button variant="outline" className="w-full" onClick={onClick}>
+      <CardFooter className="pt-2 grid grid-cols-2 gap-2">
+        <Button variant="outline" onClick={onClick}>
           <ExternalLink className="mr-2 h-4 w-4" />
-          <span>Ver detalles</span>
+          <span>Detalles</span>
+        </Button>
+        <Button variant="outline" onClick={() => navigate(`/clients/${client.id}`)}>
+          <FileText className="mr-2 h-4 w-4" />
+          <span>Perfil</span>
         </Button>
       </CardFooter>
       

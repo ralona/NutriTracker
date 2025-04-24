@@ -25,7 +25,7 @@ import {
 } from "@shared/schema";
 import { eq, and, inArray, between, desc } from "drizzle-orm";
 import { z } from "zod";
-import { startOfWeek, endOfWeek, startOfDay, endOfDay, format, addDays, parseISO } from "date-fns";
+import { startOfWeek, endOfWeek, startOfDay, endOfDay, format, addDays, parseISO, subDays } from "date-fns";
 
 // Helper to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {

@@ -482,15 +482,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const client = await storage.getUser(clientId);
       
       if (!client) {
-        return res.status(404).json({ message: "Client not found" });
+        return res.status(404).json({ message: "Cliente no encontrado" });
       }
       
       if (client.nutritionistId !== req.user!.id) {
-        return res.status(403).json({ message: "Not authorized to view this client" });
+        return res.status(403).json({ message: "No autorizado a ver este cliente" });
       }
       
-      res.json(client);
+      // Obtener un resumen del cliente con datos adicionales
+      const today = new Date();
+      const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Lunes
+      const weekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Domingo
+      
+      // Obtener comidas recientes
+      const recentMeals = await storage.getMealsByDateRange(clientId, subDays(today, 7), today);
+      
+      // Obtener actividad física reciente
+      const recentActivities = await storage.getPhysicalActivitiesByDateRange(clientId, subDays(today, 7), today);
+      
+      // Obtener plan de comidas activo
+      const activeMealPlan = await storage.getActiveMealPlanForUser(clientId);
+      
+      // Obtener integración con app de salud
+      const healthIntegration = await storage.getHealthAppIntegration(clientId);
+      
+      // Calcular métricas (simplificado)
+      const mealCount = recentMeals.length;
+      let lastWeekStatus: 'Bien' | 'Regular' | 'Insuficiente' = 'Insuficiente';
+      
+      if (mealCount > 15) {
+        lastWeekStatus = 'Bien';
+      } else if (mealCount > 7) {
+        lastWeekStatus = 'Regular';
+      }
+      
+      // Calcular progreso general (simplificado)
+      const progress = Math.min(100, Math.round((mealCount / 21) * 100));
+      
+      // Obtener comentarios pendientes
+      const pendingComments = await storage.getPendingCommentCount(clientId);
+      
+      // Obtener la última actividad física con detalles
+      let latestActivity;
+      if (recentActivities.length > 0) {
+        const sortedActivities = recentActivities.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        if (sortedActivities[0]) {
+          latestActivity = await storage.getPhysicalActivityWithExercises(sortedActivities[0].id);
+        }
+      }
+      
+      // Construir el objeto de respuesta
+      const clientWithSummary = {
+        ...client,
+        latestMeal: recentMeals.length > 0 ? 
+          recentMeals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : 
+          undefined,
+        pendingComments,
+        progress,
+        lastWeekStatus,
+        activePlan: activeMealPlan,
+        latestActivity,
+        healthIntegration
+      };
+      
+      res.json(clientWithSummary);
     } catch (error) {
+      console.error("Error al obtener datos del cliente:", error);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -570,6 +629,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Cliente eliminado correctamente",
         client: updatedClient
       });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Obtener comidas diarias de un cliente como nutricionista
+  app.get("/api/nutritionist/clients/:id/meals/daily", isNutritionist, async (req, res) => {
+    try {
+      const clientId = Number(req.params.id);
+      const client = await storage.getUser(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Verificar que el cliente pertenece al nutricionista
+      if (client.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No tienes permiso para ver este cliente" });
+      }
+      
+      // Recuperar la fecha de la consulta o usar el día actual
+      const dateStr = req.query.date as string;
+      let date;
+      
+      if (dateStr) {
+        date = parseISO(dateStr);
+      } else {
+        date = new Date();
+      }
+      
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
+      
+      // Obtener comidas del día para el cliente
+      const meals = await storage.getMealsByDateRange(clientId, dayStart, dayEnd);
+      
+      // Obtener comentarios para cada comida
+      const mealsWithComments = await Promise.all(
+        meals.map(async (meal) => {
+          const comments = await storage.getCommentsByMealId(meal.id);
+          return {
+            ...meal,
+            comments
+          };
+        })
+      );
+      
+      // Organizar por tipo de comida
+      const dailyMeals: DailyMeals = {};
+      
+      for (const meal of mealsWithComments) {
+        const mealWithComments = meal as any;
+        
+        if (dailyMeals[meal.type as keyof typeof dailyMeals]) {
+          // Si ya existe un array para este tipo, añadimos la comida
+          dailyMeals[meal.type as keyof typeof dailyMeals]!.push(mealWithComments);
+        } else {
+          // Si no existe, creamos un nuevo array con esta comida
+          dailyMeals[meal.type as keyof typeof dailyMeals] = [mealWithComments];
+        }
+      }
+      
+      res.json(dailyMeals);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Obtener actividad física de un cliente como nutricionista
+  app.get("/api/nutritionist/clients/:id/activities", isNutritionist, async (req, res) => {
+    try {
+      const clientId = Number(req.params.id);
+      const client = await storage.getUser(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Verificar que el cliente pertenece al nutricionista
+      if (client.nutritionistId !== req.user!.id) {
+        return res.status(403).json({ message: "No tienes permiso para ver este cliente" });
+      }
+      
+      // Recuperar la fecha de la consulta o usar el día actual
+      const dateStr = req.query.date as string;
+      let date;
+      
+      if (dateStr) {
+        date = parseISO(dateStr);
+      } else {
+        date = new Date();
+      }
+      
+      const dayStart = startOfDay(date);
+      
+      // Obtener actividad física del día para el cliente
+      const activity = await storage.getPhysicalActivityByDate(clientId, dayStart);
+      
+      if (!activity) {
+        return res.json(null);
+      }
+      
+      // Obtener detalles completos con ejercicios
+      const activityWithExercises = await storage.getPhysicalActivityWithExercises(activity.id);
+      
+      res.json(activityWithExercises);
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
     }

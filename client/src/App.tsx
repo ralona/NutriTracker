@@ -17,6 +17,7 @@ import ActivityTracking from "@/pages/activity-tracking";
 import NutritionistDashboard from "@/pages/nutritionist-dashboard";
 import MealPlanManagement from "@/pages/meal-plan-management";
 import ActivateInvitationPage from "@/pages/activate-invitation";
+import ClientProfile from "@/pages/client-profile";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 
@@ -48,6 +49,7 @@ function Router() {
       <ProtectedRoute path="/activities" component={ActivityTracking} />
       <NutritionistRoute path="/nutritionist" component={NutritionistDashboard} />
       <NutritionistRoute path="/meal-plans" component={MealPlanManagement} />
+      <NutritionistRoute path="/clients/:clientId" component={ClientProfile} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, Mail, MoreHorizontal, Trash2, Edit, UserCheck, UserX, Copy, ExternalLink } from "lucide-react";
+import { Loader2, UserPlus, Mail, MoreHorizontal, Trash2, Edit, UserCheck, UserX, Copy, ExternalLink, FileText } from "lucide-react";
 import { ClientWithSummary, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
 
 // Schema para invitar a un nuevo cliente
 const inviteClientSchema = z.object({
@@ -31,6 +32,7 @@ type InviteClientValues = z.infer<typeof inviteClientSchema>;
 
 export default function ClientManagement() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [selectedClient, setSelectedClient] = useState<ClientWithSummary | null>(null);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);

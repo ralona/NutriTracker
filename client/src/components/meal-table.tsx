@@ -84,10 +84,10 @@ export default function MealTable({
                         <Button
                           variant="link"
                           size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                           onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
                         >
-                          Ver detalles
+                          <Plus className="h-3 w-3" /> Añadir
                         </Button>
                       </div>
                     ) : (
@@ -96,10 +96,10 @@ export default function MealTable({
                         <Button
                           variant="link"
                           size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                           onClick={() => onAddMeal(dayStr, MealType.BREAKFAST)}
                         >
-                          Ver día
+                          <Plus className="h-3 w-3" /> Añadir
                         </Button>
                       </div>
                     )}
@@ -153,10 +153,10 @@ export default function MealTable({
                         <Button
                           variant="link"
                           size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                           onClick={() => onAddMeal(dayStr, MealType.MORNING_SNACK)}
                         >
-                          Ver día
+                          <Plus className="h-3 w-3" /> Añadir
                         </Button>
                       </div>
                     )}
@@ -216,10 +216,10 @@ export default function MealTable({
                         <Button
                           variant="link"
                           size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                           onClick={() => onAddMeal(dayStr, MealType.LUNCH)}
                         >
-                          Ver día
+                          <Plus className="h-3 w-3" /> Añadir
                         </Button>
                       </div>
                     )}
@@ -273,10 +273,10 @@ export default function MealTable({
                         <Button
                           variant="link"
                           size="sm"
-                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                          className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                           onClick={() => onAddMeal(dayStr, MealType.AFTERNOON_SNACK)}
                         >
-                          Ver día
+                          <Plus className="h-3 w-3" /> Añadir
                         </Button>
                       </div>
                     )}

@@ -617,8 +617,11 @@ export default function MealTracking() {
                     meals={weeklyData.meals}
                     summaries={weeklyData.summaries || []}
                     onAddMeal={(day, mealType) => {
+                      // Cambiamos a ese día pero abrimos directamente el modal de añadir comida
                       const date = new Date(day);
-                      goToSelectedDayMeal(date);
+                      setSelectedDate(date);
+                      setSelectedMealType(mealType);
+                      setIsAddingMeal(true);
                     }}
                     onEditMeal={(meal) => {
                       const date = new Date(meal.date);

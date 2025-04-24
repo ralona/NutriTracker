@@ -89,7 +89,7 @@ export default function MealTracking() {
   const { data: weeklyData, isLoading: isLoadingWeekly } = useQuery({
     queryKey: ["/api/meals/weekly", selectedWeek.toISOString()],
     queryFn: async ({ queryKey }) => {
-      const response = await fetch(`/api/meals/weekly?startDate=${queryKey[1]}`);
+      const response = await fetch(`/api/meals/weekly?date=${queryKey[1]}`);
       if (!response.ok) throw new Error("Error fetching weekly meals");
       return response.json();
     },
@@ -302,7 +302,7 @@ export default function MealTracking() {
             const mealDescriptions = meals.map((meal: any) => meal.description).join("\n\n");
             row.push(mealDescriptions);
           } else {
-            row.push("-");
+            row.push(""); // Celda vacía en lugar de un guión
           }
         });
         

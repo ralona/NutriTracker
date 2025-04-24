@@ -620,7 +620,7 @@ export default function ClientManagement() {
                   variant="outline" 
                   className="gap-2 w-full"
                   onClick={() => {
-                    navigate(`/clients/${selectedClient.id}`);
+                    navigate(`/nutritionist/clients/${selectedClient.id}`);
                     setSelectedClient(null);
                   }}
                 >

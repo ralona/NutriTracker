@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, User as UserIcon, Settings, Sun, Moon, Utensils } from "lucide-react";
+import { Loader2, LogOut, User as UserIcon, Settings, Sun, Moon, Utensils, Activity } from "lucide-react";
 
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
@@ -68,6 +68,11 @@ export default function Header() {
                   <Link href="/meals/weekly">
                     <span className={`text-sm font-medium ${location === "/meals/weekly" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
                       Plan Semanal
+                    </span>
+                  </Link>
+                  <Link href="/activities">
+                    <span className={`text-sm font-medium ${location === "/activities" ? "text-primary" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}>
+                      Actividad Física
                     </span>
                   </Link>
                 </>
@@ -139,6 +144,12 @@ export default function Header() {
                       </DropdownMenuItem>
                       <DropdownMenuItem className="md:hidden">
                         <Link href="/meals/weekly">Plan Semanal</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="md:hidden">
+                        <Link href="/activities">
+                          <Activity className="mr-2 h-4 w-4" />
+                          Actividad Física
+                        </Link>
                       </DropdownMenuItem>
                     </>
                   )}

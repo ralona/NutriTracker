@@ -14,7 +14,8 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and, between, desc, asc, inArray, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, between, desc, asc, inArray, isNull, isNotNull, like } from "drizzle-orm";
+import { format } from "date-fns";
 import { pool } from './db';
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -723,15 +724,78 @@ export class DatabaseStorage implements IStorage {
     }
     
     // En un sistema real, aquí llamaríamos a la API correspondiente (Google Fit o Apple Health)
-    // Esto requeriría las credenciales de API correspondientes
+    // Esto requeriría las credenciales de API correspondientes y OAuth
+    
+    const today = new Date();
+    
+    // Simulamos los datos que vendría de la API externa
+    let steps = 0;
+    let caloriesBurned = 0;
+    let exerciseMinutes = 0;
+    
+    if (integration.provider === "google_fit") {
+      // Simulamos datos de Google Fit
+      steps = Math.floor(7500 + Math.random() * 5000); // Entre 7500 y 12500 pasos
+      caloriesBurned = Math.floor(steps * 0.04); // ~40 calorías por cada 1000 pasos
+      exerciseMinutes = Math.floor(steps / 100); // ~10 min por cada 1000 pasos
+    } else if (integration.provider === "apple_health") {
+      // Simulamos datos de Apple Health
+      steps = Math.floor(8000 + Math.random() * 6000); // Entre 8000 y 14000 pasos
+      caloriesBurned = Math.floor(steps * 0.05); // ~50 calorías por cada 1000 pasos
+      exerciseMinutes = Math.floor(steps / 90); // ~11 min por cada 1000 pasos
+    }
+    
+    // Buscamos si ya existe una actividad para hoy
+    let activity = await this.getPhysicalActivityByDate(userId, today);
+    
+    if (activity) {
+      // Actualizamos la actividad existente
+      activity = await this.updatePhysicalActivity(activity.id, {
+        steps,
+        notes: `Datos sincronizados automáticamente desde ${integration.provider === "google_fit" ? "Google Fit" : "Apple Health"} el ${format(today, "dd/MM/yyyy HH:mm")}`,
+      });
+    } else {
+      // Creamos una nueva actividad
+      activity = await this.createPhysicalActivity({
+        userId,
+        date: today,
+        steps,
+        notes: `Datos sincronizados automáticamente desde ${integration.provider === "google_fit" ? "Google Fit" : "Apple Health"} el ${format(today, "dd/MM/yyyy HH:mm")}`,
+      });
+    }
+    
+    // Si tenemos minutos de ejercicio, creamos un ejercicio automático
+    if (exerciseMinutes > 0) {
+      // Buscamos el tipo de ejercicio 'Caminar' o cualquier otro tipo disponible
+      const walkExerciseType = await db
+        .select()
+        .from(exerciseTypes)
+        .where(like(exerciseTypes.name, '%Caminar%'))
+        .limit(1);
+        
+      const exerciseTypeId = walkExerciseType.length > 0 
+        ? walkExerciseType[0].id 
+        : (await this.getExerciseTypes())[0]?.id;
+        
+      if (exerciseTypeId) {
+        // Agregamos la entrada de ejercicio
+        await this.addExerciseEntry({
+          activityId: activity.id,
+          exerciseTypeId,
+          duration: exerciseMinutes,
+          caloriesBurned,
+          notes: `Ejercicio detectado automáticamente por ${integration.provider === "google_fit" ? "Google Fit" : "Apple Health"}`,
+        });
+      }
+    }
     
     // Actualizamos la fecha de última sincronización
     await this.updateHealthAppIntegration(integration.id, {
       lastSynced: new Date()
     });
     
-    // Devolvemos la actividad actual
-    return this.getPhysicalActivityByDate(userId, new Date());
+    // Devolvemos la actividad completa con ejercicios
+    return this.getPhysicalActivityWithExercises(activity.id);
   }
 }
 

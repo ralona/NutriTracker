@@ -19,7 +19,24 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-import { AlertCircle, Award, Calendar, Dumbbell, Plus, RefreshCw, Trash2, Watch } from "lucide-react";
+import { 
+  AlertCircle, 
+  Award, 
+  Calendar, 
+  Dumbbell, 
+  Plus, 
+  RefreshCw, 
+  Trash2, 
+  Watch,
+  Bike,
+  Footprints,
+  Music,
+  Volleyball,
+  Timer,
+  Heart,
+  PersonStanding,
+  Waves,
+} from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -48,6 +65,32 @@ const exerciseFormSchema = z.object({
 type ActivityFormValues = z.infer<typeof activityFormSchema>;
 type ExerciseFormValues = z.infer<typeof exerciseFormSchema>;
 
+// Función para obtener el icono correspondiente según el nombre del icono
+const getExerciseIcon = (iconName: string | null | undefined) => {
+  switch (iconName) {
+    case 'Volleyball':
+      return <Volleyball className="h-4 w-4 text-primary" />;
+    case 'Bike':
+      return <Bike className="h-4 w-4 text-primary" />;
+    case 'Footprints':
+      return <Footprints className="h-4 w-4 text-primary" />;
+    case 'Waves':
+      return <Waves className="h-4 w-4 text-primary" />;
+    case 'Music':
+      return <Music className="h-4 w-4 text-primary" />;
+    case 'PersonStanding':
+      return <PersonStanding className="h-4 w-4 text-primary" />;
+    case 'Dumbbell':
+      return <Dumbbell className="h-4 w-4 text-primary" />;
+    case 'Timer':
+      return <Timer className="h-4 w-4 text-primary" />;
+    case 'Heart':
+      return <Heart className="h-4 w-4 text-primary" />;
+    default:
+      return <Dumbbell className="h-4 w-4 text-primary" />;
+  }
+};
+
 const ExerciseEntry = ({ exercise, onDelete }: { 
   exercise: any, 
   onDelete: () => void 
@@ -55,7 +98,7 @@ const ExerciseEntry = ({ exercise, onDelete }: {
   return (
     <div className="flex items-center justify-between p-3 border rounded-md mb-2 bg-card">
       <div className="flex items-center gap-2">
-        <Dumbbell className="h-4 w-4 text-primary" />
+        {getExerciseIcon(exercise.exerciseType?.iconName)}
         <div>
           <p className="font-medium">{exercise.exerciseType?.name || "Ejercicio"}</p>
           <p className="text-sm text-muted-foreground">{exercise.duration} minutos • {exercise.caloriesBurned || 0} calorías</p>

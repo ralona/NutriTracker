@@ -42,7 +42,7 @@ const exerciseFormSchema = z.object({
   duration: z.number().min(1, "La duración debe ser al menos 1 minuto"),
   caloriesBurned: z.number().min(0, "Las calorías no pueden ser negativas").optional(),
   notes: z.string().optional(),
-  startTime: z.string().optional(),
+  startTime: z.string().transform(val => val === "" ? null : val).optional(),
 });
 
 type ActivityFormValues = z.infer<typeof activityFormSchema>;
@@ -139,8 +139,14 @@ export default function ActivityTracking() {
   // Mutation para agregar ejercicio
   const exerciseMutation = useMutation({
     mutationFn: async (data: ExerciseFormValues) => {
-      console.log("Enviando ejercicio al servidor:", data);
-      const res = await apiRequest('POST', '/api/exercise-entries', data);
+      // Asegurar que startTime sea null si está vacío
+      const modifiedData = {
+        ...data,
+        startTime: data.startTime === "" ? null : data.startTime
+      };
+      
+      console.log("Enviando ejercicio al servidor:", modifiedData);
+      const res = await apiRequest('POST', '/api/exercise-entries', modifiedData);
       return await res.json();
     },
     onSuccess: () => {
@@ -624,6 +630,10 @@ export default function ActivityTracking() {
                         <Input
                           type="time"
                           {...field}
+                          onChange={(e) => {
+                            // Si está vacío, asignar null explícitamente
+                            field.onChange(e.target.value === "" ? null : e.target.value);
+                          }}
                           value={field.value || ""}
                         />
                       </FormControl>

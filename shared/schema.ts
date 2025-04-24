@@ -243,7 +243,8 @@ export const insertExerciseEntrySchema = z.object({
   notes: z.string().optional(),
   startTime: z.union([
     z.string().refine(val => val !== ""),
-    z.null()
+    z.null(),
+    z.undefined()
   ]).optional().nullable(),
 });
 

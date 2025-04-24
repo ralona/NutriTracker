@@ -140,7 +140,7 @@ export default function WeeklyView() {
           const detail = getMealPlanDetail(dayStr, type);
           
           // Si hay un detalle de comida, lo agregamos, sino un guión
-          row.push(detail ? detail.description : "-");
+          row.push(detail ? detail.description : "");
         });
         
         return row;
@@ -188,10 +188,23 @@ export default function WeeklyView() {
         duration: 3000
       });
     } catch (error) {
-      console.error("Error al generar PDF:", error);
+      console.error("Error al generar PDF del plan:", error);
+      
+      // Más información de depuración
+      if (activeMealPlan) {
+        console.log("Datos del plan disponibles para PDF:", {
+          descripcion: activeMealPlan.description || "Sin descripción",
+          fechaInicio: activeMealPlan.weekStart,
+          fechaFin: activeMealPlan.weekEnd,
+          detalles: activeMealPlan.details?.length || 0
+        });
+      } else {
+        console.log("No hay plan de comidas disponible para generar el PDF");
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo generar el PDF. Intente de nuevo.",
+        description: "No se pudo generar el PDF del plan. Verifica que el plan esté activo e intenta de nuevo.",
         variant: "destructive"
       });
     }
@@ -240,7 +253,7 @@ export default function WeeklyView() {
             const mealNames = meals.map(meal => meal.name || "Sin nombre").join("\n\n");
             row.push(mealNames);
           } else {
-            row.push("-");
+            row.push("");  // Celda vacía en lugar de guión
           }
         });
         
@@ -289,10 +302,23 @@ export default function WeeklyView() {
         duration: 3000
       });
     } catch (error) {
-      console.error("Error al generar PDF:", error);
+      console.error("Error al generar PDF de comidas:", error);
+      
+      // Más información de depuración
+      if (data && data.meals) {
+        console.log("Datos disponibles para PDF:", 
+          Object.keys(data.meals).map(key => ({ 
+            day: key, 
+            mealCount: Object.values(data.meals[key]).flat().length 
+          }))
+        );
+      } else {
+        console.log("No hay datos disponibles para generar el PDF");
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo generar el PDF. Intente de nuevo.",
+        description: "No se pudo generar el PDF. Verifica que tengas comidas registradas e intenta de nuevo.",
         variant: "destructive"
       });
     }
@@ -446,7 +472,90 @@ export default function WeeklyView() {
         )
       )}
       
-      {/* No forms for adding/editing meals in Weekly Plan view */}
+      {/* Registered Meals Section */}
+      {user?.role === "client" && (
+        <Card className="mb-6 border-blue-200">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-lg flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                  Mis comidas registradas
+                </CardTitle>
+                <CardDescription>
+                  Resumen de las comidas que has registrado durante la semana
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center text-xs" 
+                onClick={downloadMealsAsPDF}
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Descargar PDF
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500 border-r-2"></div>
+              </div>
+            ) : data && Object.values(data.meals).some(day => Object.keys(day).length > 0) ? (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="text-left p-2 bg-gray-100 text-xs font-medium">Comida</th>
+                      {weekDays.map((day) => (
+                        <th key={day.toString()} className="text-center p-2 bg-gray-100 text-xs font-medium">
+                          {format(day, "EEE d", { locale: es })}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(MealType).map(([type, label]) => (
+                      <tr key={type} className="border-b">
+                        <td className="text-left p-2 text-sm font-medium">{label}</td>
+                        {weekDays.map((day) => {
+                          const dayStr = format(day, "yyyy-MM-dd");
+                          const meals = data.meals[dayStr]?.[type as keyof typeof MealType];
+                          
+                          return (
+                            <td key={dayStr} className="text-center p-2">
+                              {meals && meals.length > 0 ? (
+                                <div className="p-2 rounded bg-gray-50 text-xs text-left">
+                                  {meals.map((meal, idx) => (
+                                    <div key={meal.id} className={idx > 0 ? "mt-2 pt-2 border-t" : ""}>
+                                      <div className="font-medium">{meal.name || "Sin nombre"}</div>
+                                      {meal.description && <div className="text-gray-600 text-xs mt-1">{meal.description}</div>}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-300">-</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No has registrado comidas para esta semana.</p>
+                <p className="mt-2 text-sm">
+                  Utiliza la sección "Comidas Diarias" para registrar tus comidas.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

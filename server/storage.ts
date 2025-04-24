@@ -14,7 +14,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and, between, desc, inArray, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, between, desc, asc, inArray, isNull, isNotNull } from "drizzle-orm";
 import { pool } from './db';
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -448,6 +448,290 @@ export class DatabaseStorage implements IStorage {
       .update(mealPlans)
       .set({ active: false })
       .where(eq(mealPlans.id, id));
+  }
+
+  // EJERCICIOS Y ACTIVIDAD FÍSICA
+
+  async getExerciseTypes(): Promise<ExerciseType[]> {
+    return db
+      .select()
+      .from(exerciseTypes)
+      .where(eq(exerciseTypes.active, true))
+      .orderBy(asc(exerciseTypes.name));
+  }
+
+  async getExerciseTypeById(id: number): Promise<ExerciseType | undefined> {
+    const [exerciseType] = await db
+      .select()
+      .from(exerciseTypes)
+      .where(eq(exerciseTypes.id, id));
+    return exerciseType;
+  }
+
+  async createExerciseType(typeData: InsertExerciseType): Promise<ExerciseType> {
+    const [exerciseType] = await db
+      .insert(exerciseTypes)
+      .values(typeData)
+      .returning();
+    return exerciseType;
+  }
+
+  async updateExerciseType(id: number, typeData: Partial<ExerciseType>): Promise<ExerciseType> {
+    const [updatedType] = await db
+      .update(exerciseTypes)
+      .set(typeData)
+      .where(eq(exerciseTypes.id, id))
+      .returning();
+    
+    if (!updatedType) {
+      throw new Error("Tipo de ejercicio no encontrado");
+    }
+    
+    return updatedType;
+  }
+
+  async getPhysicalActivityByDate(userId: number, date: Date): Promise<PhysicalActivity | undefined> {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+    
+    const [activity] = await db
+      .select()
+      .from(physicalActivities)
+      .where(and(
+        eq(physicalActivities.userId, userId),
+        between(physicalActivities.date, startDate, endDate)
+      ));
+    
+    return activity;
+  }
+
+  async getPhysicalActivitiesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<PhysicalActivity[]> {
+    return db
+      .select()
+      .from(physicalActivities)
+      .where(and(
+        eq(physicalActivities.userId, userId),
+        between(physicalActivities.date, startDate, endDate)
+      ))
+      .orderBy(asc(physicalActivities.date));
+  }
+
+  async getPhysicalActivityWithExercises(id: number): Promise<PhysicalActivityWithExercises | undefined> {
+    const [activity] = await db
+      .select()
+      .from(physicalActivities)
+      .where(eq(physicalActivities.id, id));
+    
+    if (!activity) {
+      return undefined;
+    }
+    
+    // Obtener las entradas de ejercicio asociadas
+    const exerciseResults = await db
+      .select({
+        entry: exerciseEntries,
+        type: exerciseTypes
+      })
+      .from(exerciseEntries)
+      .where(eq(exerciseEntries.activityId, id))
+      .leftJoin(exerciseTypes, eq(exerciseEntries.exerciseTypeId, exerciseTypes.id));
+    
+    // Formatear los resultados y asegurar que ningún objeto de tipo es nulo
+    const exercises = exerciseResults.map(result => {
+      // Si el tipo de ejercicio es nulo, crear un tipo de ejercicio predeterminado
+      const exerciseType = result.type || {
+        id: 0,
+        name: "Desconocido",
+        description: null,
+        caloriesPerMinute: null,
+        active: true
+      };
+      
+      return {
+        ...result.entry,
+        exerciseType
+      };
+    });
+    
+    return {
+      ...activity,
+      exercises
+    };
+  }
+
+  async createPhysicalActivity(activityData: InsertPhysicalActivity): Promise<PhysicalActivity> {
+    // Comprobar si ya existe una actividad para ese día
+    const existingActivity = await this.getPhysicalActivityByDate(
+      activityData.userId, 
+      new Date(activityData.date)
+    );
+    
+    if (existingActivity) {
+      return this.updatePhysicalActivity(existingActivity.id, activityData);
+    }
+    
+    const [activity] = await db
+      .insert(physicalActivities)
+      .values({
+        ...activityData,
+        date: new Date(activityData.date)
+      })
+      .returning();
+    
+    return activity;
+  }
+
+  async updatePhysicalActivity(id: number, activityData: Partial<PhysicalActivity>): Promise<PhysicalActivity> {
+    // Si hay una fecha en los datos, asegurar que sea un objeto Date
+    const newActivityData = { ...activityData };
+    if (newActivityData.date && typeof newActivityData.date === 'string') {
+      newActivityData.date = new Date(newActivityData.date);
+    }
+    
+    const [updatedActivity] = await db
+      .update(physicalActivities)
+      .set(newActivityData)
+      .where(eq(physicalActivities.id, id))
+      .returning();
+    
+    if (!updatedActivity) {
+      throw new Error("Actividad física no encontrada");
+    }
+    
+    return updatedActivity;
+  }
+
+  async addExerciseEntry(entryData: InsertExerciseEntry): Promise<ExerciseEntry> {
+    // Si hay una fecha de inicio, asegurar que sea un objeto Date
+    const newEntryData = { ...entryData };
+    if (newEntryData.startTime && typeof newEntryData.startTime === 'string') {
+      newEntryData.startTime = new Date(newEntryData.startTime);
+    }
+    
+    // Si no se proporcionan calorías quemadas, calcularlas
+    if (!newEntryData.caloriesBurned) {
+      const exerciseType = await this.getExerciseTypeById(newEntryData.exerciseTypeId);
+      if (exerciseType && exerciseType.caloriesPerMinute) {
+        newEntryData.caloriesBurned = exerciseType.caloriesPerMinute * newEntryData.duration;
+      }
+    }
+    
+    const [entry] = await db
+      .insert(exerciseEntries)
+      .values(newEntryData)
+      .returning();
+    
+    return entry;
+  }
+
+  async updateExerciseEntry(id: number, entryData: Partial<ExerciseEntry>): Promise<ExerciseEntry> {
+    // Si hay una fecha de inicio, asegurar que sea un objeto Date
+    const newEntryData = { ...entryData };
+    if (newEntryData.startTime && typeof newEntryData.startTime === 'string') {
+      newEntryData.startTime = new Date(newEntryData.startTime);
+    }
+    
+    const [updatedEntry] = await db
+      .update(exerciseEntries)
+      .set(newEntryData)
+      .where(eq(exerciseEntries.id, id))
+      .returning();
+    
+    if (!updatedEntry) {
+      throw new Error("Entrada de ejercicio no encontrada");
+    }
+    
+    return updatedEntry;
+  }
+
+  async deleteExerciseEntry(id: number): Promise<void> {
+    await db.delete(exerciseEntries).where(eq(exerciseEntries.id, id));
+  }
+
+  // INTEGRACIÓN CON APLICACIONES DE SALUD
+
+  async getHealthAppIntegration(userId: number): Promise<HealthAppIntegration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(healthAppIntegrations)
+      .where(and(
+        eq(healthAppIntegrations.userId, userId),
+        eq(healthAppIntegrations.active, true)
+      ));
+    
+    return integration;
+  }
+
+  async createHealthAppIntegration(integrationData: InsertHealthAppIntegration): Promise<HealthAppIntegration> {
+    // Desactivar integraciones existentes para este usuario
+    await db
+      .update(healthAppIntegrations)
+      .set({ active: false })
+      .where(and(
+        eq(healthAppIntegrations.userId, integrationData.userId),
+        eq(healthAppIntegrations.active, true)
+      ));
+    
+    // Validar que las fechas son objetos Date
+    const newIntegrationData = { ...integrationData };
+    if (newIntegrationData.tokenExpiry && typeof newIntegrationData.tokenExpiry === 'string') {
+      newIntegrationData.tokenExpiry = new Date(newIntegrationData.tokenExpiry);
+    }
+    if (newIntegrationData.lastSynced && typeof newIntegrationData.lastSynced === 'string') {
+      newIntegrationData.lastSynced = new Date(newIntegrationData.lastSynced);
+    }
+    
+    const [integration] = await db
+      .insert(healthAppIntegrations)
+      .values(newIntegrationData)
+      .returning();
+    
+    return integration;
+  }
+
+  async updateHealthAppIntegration(id: number, integrationData: Partial<HealthAppIntegration>): Promise<HealthAppIntegration> {
+    // Validar que las fechas son objetos Date
+    const newIntegrationData = { ...integrationData };
+    if (newIntegrationData.tokenExpiry && typeof newIntegrationData.tokenExpiry === 'string') {
+      newIntegrationData.tokenExpiry = new Date(newIntegrationData.tokenExpiry);
+    }
+    if (newIntegrationData.lastSynced && typeof newIntegrationData.lastSynced === 'string') {
+      newIntegrationData.lastSynced = new Date(newIntegrationData.lastSynced);
+    }
+    
+    const [updatedIntegration] = await db
+      .update(healthAppIntegrations)
+      .set(newIntegrationData)
+      .where(eq(healthAppIntegrations.id, id))
+      .returning();
+    
+    if (!updatedIntegration) {
+      throw new Error("Integración de aplicación de salud no encontrada");
+    }
+    
+    return updatedIntegration;
+  }
+
+  async syncHealthAppData(userId: number): Promise<PhysicalActivity | undefined> {
+    // Obtenemos la integración
+    const integration = await this.getHealthAppIntegration(userId);
+    if (!integration) {
+      throw new Error("No hay integración activa para este usuario");
+    }
+    
+    // En un sistema real, aquí llamaríamos a la API correspondiente (Google Fit o Apple Health)
+    // Esto requeriría las credenciales de API correspondientes
+    
+    // Actualizamos la fecha de última sincronización
+    await this.updateHealthAppIntegration(integration.id, {
+      lastSynced: new Date()
+    });
+    
+    // Devolvemos la actividad actual
+    return this.getPhysicalActivityByDate(userId, new Date());
   }
 }
 

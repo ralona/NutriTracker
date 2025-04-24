@@ -963,14 +963,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crear o actualizar actividad física diaria
   app.post("/api/physical-activity", isAuthenticated, async (req, res) => {
     try {
+      console.log("Datos recibidos en API:", req.body);
+      
+      // Asegurarse de que la fecha es un objeto Date
+      let modifiedBody = { ...req.body };
+      if (typeof modifiedBody.date === 'string') {
+        modifiedBody.date = new Date(modifiedBody.date);
+      }
+      
+      if (typeof modifiedBody.fitSyncDate === 'string') {
+        modifiedBody.fitSyncDate = new Date(modifiedBody.fitSyncDate);
+      }
+      
+      console.log("Datos procesados en API:", modifiedBody);
+      
       const activityData = insertPhysicalActivitySchema.parse({
-        ...req.body,
+        ...modifiedBody,
         userId: req.user!.id
       });
+      
+      console.log("Datos validados en API:", activityData);
       
       const activity = await storage.createPhysicalActivity(activityData);
       res.status(201).json(activity);
     } catch (error) {
+      console.error("Error al procesar actividad física:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
@@ -1007,7 +1024,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Añadir un ejercicio a una actividad física
   app.post("/api/exercise-entries", isAuthenticated, async (req, res) => {
     try {
-      const entryData = insertExerciseEntrySchema.parse(req.body);
+      console.log("Datos recibidos en API (ejercicio):", req.body);
+      
+      // Asegurarse de que las fechas son objetos Date
+      let modifiedBody = { ...req.body };
+      if (typeof modifiedBody.startTime === 'string') {
+        modifiedBody.startTime = new Date(modifiedBody.startTime);
+      }
+      
+      console.log("Datos procesados en API (ejercicio):", modifiedBody);
+      
+      const entryData = insertExerciseEntrySchema.parse(modifiedBody);
+      
+      console.log("Datos validados en API (ejercicio):", entryData);
       
       // Verificar que la actividad pertenece al usuario
       const activity = await db
@@ -1026,6 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const entry = await storage.addExerciseEntry(entryData);
       res.status(201).json(entry);
     } catch (error) {
+      console.error("Error al procesar ejercicio:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }

@@ -39,7 +39,6 @@ Sistema de seguimiento nutricional que permite a los clientes registrar sus comi
 ### Credenciales de Acceso
 
 **Nutricionistas:**
-- `nutricion.cristinasanchez@gmail.com` / `password123`
 - `nutritionist@nutritracker.com` / `nutritest123`
 
 **Clientes:**

@@ -105,19 +105,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   async initialize(): Promise<void> {
-    const adminExists = await this.getUserByEmail("nutricion.cristinasanchez@gmail.com");
-    
-    if (!adminExists) {
-      // Crear usuario nutricionista de ejemplo
-      await this.createUser({
-        password: await hashPassword("password123"),
-        name: "Cristina Sánchez",
-        email: "nutricion.cristinasanchez@gmail.com",
-        role: "nutritionist",
-        nutritionistId: null,
-        active: true
-      });
-    }
+    // Base de datos inicializada, no se crean usuarios automáticamente
+    console.log("Base de datos inicializada correctamente");
   }
   
   async getUser(id: number): Promise<User | undefined> {
